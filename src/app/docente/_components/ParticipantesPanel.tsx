@@ -1,0 +1,38 @@
+import { Badge } from "@/components/Badge";
+import { MensajeEstado } from "@/components/MensajeEstado";
+import type { ParticipanteConectado } from "@/lib/sesionesTypes";
+
+interface ParticipantesPanelProps {
+  participantes: ParticipanteConectado[];
+  cargando: boolean;
+}
+
+export function ParticipantesPanel({ participantes, cargando }: ParticipantesPanelProps) {
+  return (
+    <div className="space-y-4">
+      <h2 className="flex items-center gap-2 text-lg font-semibold text-carbon">
+        Participantes conectados <Badge variante="celeste">{participantes.length}</Badge>
+      </h2>
+
+      {cargando ? (
+        <MensajeEstado tipo="cargando">Cargando participantes...</MensajeEstado>
+      ) : participantes.length === 0 ? (
+        <MensajeEstado tipo="vacio">Todavía no se unió ningún alumno.</MensajeEstado>
+      ) : (
+        <ul className="space-y-2">
+          {participantes.map((p) => (
+            <li
+              key={p.alumnoId}
+              className="flex items-center justify-between rounded-lg border border-carbon/10 bg-arena px-4 py-3"
+            >
+              <span className="text-sm text-carbon">
+                {p.nombre} {p.apellido}
+              </span>
+              <Badge variante="celeste">{p.estadoActual}</Badge>
+            </li>
+          ))}
+        </ul>
+      )}
+    </div>
+  );
+}

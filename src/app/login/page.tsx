@@ -1,12 +1,17 @@
 "use client";
 
-import { useMutation } from "@tanstack/react-query";
+import { useMutation, useQuery } from "@tanstack/react-query";
 import axios from "axios";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { Boton } from "@/components/Boton";
+import { Campo } from "@/components/Campo";
+import { MensajeEstado } from "@/components/MensajeEstado";
+import { Tarjeta } from "@/components/Tarjeta";
 import { api } from "@/lib/api";
-import { setToken, type Usuario } from "@/lib/session";
+import { clearToken, setToken, type Rol, type Usuario } from "@/lib/session";
+import { useTokenInicial } from "@/lib/useTokenInicial";
 
 interface LoginInput {
   email: string;
@@ -16,6 +21,14 @@ interface LoginInput {
 interface LoginResponse {
   token: string;
   usuario: Usuario;
+}
+
+interface MeResponse {
+  usuario: Usuario;
+}
+
+function rutaPorRol(rol: Rol): string {
+  return rol === "docente" ? "/docente" : "/alumno";
 }
 
 function extraerMensajeError(err: unknown): string {
@@ -28,78 +41,91 @@ function extraerMensajeError(err: unknown): string {
 export default function LoginPage() {
   const router = useRouter();
   const [form, setForm] = useState<LoginInput>({ email: "", password: "" });
+  const tokenInicial = useTokenInicial();
+
+  // Si ya hay un token guardado y sigue siendo válido, no tiene sentido
+  // mostrar el formulario: lo mandamos directo a su pantalla.
+  const sesionExistente = useQuery({
+    queryKey: ["me"],
+    queryFn: () => api.get<MeResponse>("/auth/me").then((res) => res.data),
+    enabled: Boolean(tokenInicial),
+    retry: false,
+  });
+
+  useEffect(() => {
+    if (sesionExistente.data) {
+      router.replace(rutaPorRol(sesionExistente.data.usuario.rol));
+    } else if (sesionExistente.isError) {
+      clearToken();
+    }
+  }, [sesionExistente.data, sesionExistente.isError, router]);
 
   const mutation = useMutation({
-    mutationFn: (input: LoginInput) =>
-      api.post<LoginResponse>("/auth/login", input),
+    mutationFn: (input: LoginInput) => api.post<LoginResponse>("/auth/login", input),
     onSuccess: (res) => {
       setToken(res.data.token);
-      router.push("/dashboard");
+      router.push(rutaPorRol(res.data.usuario.rol));
     },
   });
 
-  return (
-    <div className="flex flex-1 items-center justify-center bg-zinc-50 px-4 dark:bg-black">
-      <form
-        onSubmit={(e) => {
-          e.preventDefault();
-          mutation.mutate(form);
-        }}
-        className="w-full max-w-sm space-y-4 rounded-lg border border-black/[.08] bg-white p-8 dark:border-white/[.145] dark:bg-zinc-950"
-      >
-        <h1 className="text-xl font-semibold text-zinc-950 dark:text-zinc-50">
-          Iniciar sesión
-        </h1>
+  if (tokenInicial && sesionExistente.isPending) {
+    return (
+      <div className="flex flex-1 items-center justify-center px-4">
+        <MensajeEstado tipo="cargando">Verificando tu sesión...</MensajeEstado>
+      </div>
+    );
+  }
 
-        <div className="space-y-1">
-          <label htmlFor="email" className="text-sm text-zinc-600 dark:text-zinc-400">
-            Email
-          </label>
-          <input
+  return (
+    <div className="flex flex-1 items-center justify-center px-4 py-12">
+      <Tarjeta className="w-full max-w-sm space-y-5">
+        <div>
+          <h1 className="text-2xl font-semibold text-carbon">ENS</h1>
+          <p className="text-sm text-carbon/70">Entorno de Navegación Supervisado</p>
+        </div>
+
+        <form
+          className="space-y-4"
+          onSubmit={(e) => {
+            e.preventDefault();
+            mutation.mutate(form);
+          }}
+        >
+          <Campo
             id="email"
-            required
+            label="Email"
             type="email"
+            autoComplete="email"
+            required
             value={form.email}
             onChange={(e) => setForm({ ...form, email: e.target.value })}
-            className="w-full rounded border border-black/[.08] px-3 py-2 text-sm dark:border-white/[.145] dark:bg-black"
           />
-        </div>
-
-        <div className="space-y-1">
-          <label htmlFor="password" className="text-sm text-zinc-600 dark:text-zinc-400">
-            Contraseña
-          </label>
-          <input
+          <Campo
             id="password"
-            required
+            label="Contraseña"
             type="password"
+            autoComplete="current-password"
+            required
             value={form.password}
             onChange={(e) => setForm({ ...form, password: e.target.value })}
-            className="w-full rounded border border-black/[.08] px-3 py-2 text-sm dark:border-white/[.145] dark:bg-black"
           />
-        </div>
 
-        {mutation.isError && (
-          <p className="text-sm text-red-600 dark:text-red-400">
-            {extraerMensajeError(mutation.error)}
-          </p>
-        )}
+          {mutation.isError && (
+            <MensajeEstado tipo="error">{extraerMensajeError(mutation.error)}</MensajeEstado>
+          )}
 
-        <button
-          type="submit"
-          disabled={mutation.isPending}
-          className="w-full rounded-full bg-foreground px-5 py-2 text-sm font-medium text-background transition-colors hover:bg-[#383838] disabled:opacity-50 dark:hover:bg-[#ccc]"
-        >
-          {mutation.isPending ? "Ingresando..." : "Ingresar"}
-        </button>
+          <Boton type="submit" cargando={mutation.isPending} className="w-full">
+            Ingresar
+          </Boton>
+        </form>
 
-        <p className="text-center text-sm text-zinc-600 dark:text-zinc-400">
+        <p className="text-center text-sm text-carbon/70">
           ¿No tenés cuenta?{" "}
-          <Link href="/registro" className="font-medium text-zinc-950 dark:text-zinc-50">
+          <Link href="/registro" className="font-medium text-carbon underline underline-offset-2">
             Crear cuenta
           </Link>
         </p>
-      </form>
+      </Tarjeta>
     </div>
   );
 }

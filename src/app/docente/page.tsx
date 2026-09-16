@@ -122,6 +122,14 @@ export default function DocentePage() {
         <div className="flex flex-col gap-6">
           <CodigoSesion codigo={codigoActivo} />
 
+          {socket.estado === "reconectando" && (
+            <Tarjeta>
+              <MensajeEstado tipo="info">
+                Se perdió la conexión en vivo, reconectando...
+              </MensajeEstado>
+            </Tarjeta>
+          )}
+
           {socket.estado === "cerrado" && socket.cierre && (
             <Tarjeta className="flex items-center justify-between gap-4">
               <MensajeEstado tipo="error">

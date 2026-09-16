@@ -121,10 +121,12 @@ export default function AlumnoPage() {
             </Tarjeta>
           )}
 
-          {socket.estado === "conectado" && (
+          {(socket.estado === "conectado" || socket.estado === "reconectando") && (
             <>
               <Tarjeta variante="destacada" className="text-center">
-                <p className="text-sm text-arena/80">Conectado a la clase</p>
+                <p className="text-sm text-arena/80">
+                  {socket.estado === "conectado" ? "Conectado a la clase" : "Reconectando..."}
+                </p>
                 <p className="mt-1 font-mono text-2xl font-bold tracking-[0.2em] text-arena">
                   {codigoConectado}
                 </p>

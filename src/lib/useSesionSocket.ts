@@ -3,7 +3,12 @@
 import { useEffect, useState } from "react";
 import type { ParticipanteConectado, SesionWsMessage, WhitelistUrl } from "./sesionesTypes";
 
-export type EstadoConexionWs = "inactivo" | "conectando" | "conectado" | "cerrado";
+export type EstadoConexionWs =
+  | "inactivo"
+  | "conectando"
+  | "conectado"
+  | "reconectando"
+  | "cerrado";
 
 export interface CierreWs {
   code: number;
@@ -49,56 +54,102 @@ export function mensajeDeCierre(code: number): string {
   return MENSAJES_CIERRE[code] ?? MENSAJE_CIERRE_DESCONOCIDO;
 }
 
+// Cierres que el propio backend dispara a propósito (ver códigos arriba):
+// son definitivos (token vencido, sesión inactiva, etc.) — reintentar no
+// va a cambiar el resultado, así que ahí no hay backoff, se corta.
+const CIERRES_DEFINITIVOS = new Set(Object.keys(MENSAJES_CIERRE).map(Number));
+
+const BACKOFF_INICIAL_MS = 1000;
+const BACKOFF_MAX_MS = 30000;
+
 // Abre la conexión y devuelve la función de limpieza. Vive fuera del
 // cuerpo del efecto a propósito: react-hooks/set-state-in-effect solo
 // mira las llamadas a setState que aparecen directamente en el cuerpo
 // del efecto, no las que ocurren dentro de callbacks de una función
 // externa (que es justamente el patrón "suscribirse a un sistema
 // externo" que la propia regla recomienda).
+//
+// Reconexión: ante un cierre que NO es uno de los códigos definitivos de
+// la app (típicamente 1006, caída de red real) reintenta solo con backoff
+// exponencial (1s, 2s, 4s... tope 30s), sin límite de intentos porque un
+// wifi de colegio puede tardar en volver. `onReset` sólo se llama una vez
+// al abrir la conexión por primera vez, no en cada reintento, para no
+// borrar la whitelist ya conocida mientras se reconecta en segundo plano.
 function conectarSesionSocket(
   codigo: string,
   token: string,
   handlers: ManejadoresConexion,
 ): () => void {
   handlers.onReset();
-  handlers.onEstado("conectando");
 
-  const url = `${WS_BASE_URL}/?codigo=${encodeURIComponent(codigo)}&token=${encodeURIComponent(token)}`;
-  const socket = new WebSocket(url);
+  let cerradoManualmente = false;
+  let intentosFallidos = 0;
+  let reintentoTimer: ReturnType<typeof setTimeout> | undefined;
+  let socketActual: WebSocket | undefined;
 
-  socket.onopen = () => {
-    handlers.onEstado("conectado");
+  function abrir(): void {
+    handlers.onEstado(intentosFallidos === 0 ? "conectando" : "reconectando");
+
+    const url = `${WS_BASE_URL}/?codigo=${encodeURIComponent(codigo)}&token=${encodeURIComponent(token)}`;
+    const socket = new WebSocket(url);
+    socketActual = socket;
+
+    socket.onopen = () => {
+      intentosFallidos = 0;
+      handlers.onEstado("conectado");
+    };
+
+    socket.onmessage = (event: MessageEvent<string>) => {
+      let mensaje: SesionWsMessage;
+      try {
+        mensaje = JSON.parse(event.data) as SesionWsMessage;
+      } catch {
+        return;
+      }
+      if (mensaje.type === "whitelist_update") {
+        handlers.onWhitelist(mensaje.whitelist);
+      } else if (mensaje.type === "participantes_update") {
+        handlers.onParticipantes(mensaje.participantes);
+      }
+      handlers.onMensajeRecibido();
+    };
+
+    socket.onclose = (event: CloseEvent) => {
+      if (cerradoManualmente) return;
+
+      if (CIERRES_DEFINITIVOS.has(event.code)) {
+        handlers.onEstado("cerrado");
+        handlers.onCierre({ code: event.code, reason: event.reason });
+        return;
+      }
+
+      intentosFallidos += 1;
+      const espera = Math.min(
+        BACKOFF_INICIAL_MS * 2 ** (intentosFallidos - 1),
+        BACKOFF_MAX_MS,
+      );
+      handlers.onEstado("reconectando");
+      reintentoTimer = setTimeout(abrir, espera);
+    };
+  }
+
+  abrir();
+
+  return () => {
+    cerradoManualmente = true;
+    clearTimeout(reintentoTimer);
+    socketActual?.close();
   };
-
-  socket.onmessage = (event: MessageEvent<string>) => {
-    let mensaje: SesionWsMessage;
-    try {
-      mensaje = JSON.parse(event.data) as SesionWsMessage;
-    } catch {
-      return;
-    }
-    if (mensaje.type === "whitelist_update") {
-      handlers.onWhitelist(mensaje.whitelist);
-    } else if (mensaje.type === "participantes_update") {
-      handlers.onParticipantes(mensaje.participantes);
-    }
-    handlers.onMensajeRecibido();
-  };
-
-  socket.onclose = (event: CloseEvent) => {
-    handlers.onCierre({ code: event.code, reason: event.reason });
-  };
-
-  return () => socket.close();
 }
 
 /**
  * Maneja la conexión WebSocket a una sesión de clase (mismo mecanismo
  * documentado en sesiones.ws.ts del backend: query params ?codigo=&token=).
- * No reintenta automáticamente ante una desconexión inesperada — queda
- * pendiente para el módulo de presencia (grace period + heartbeat), que
- * es el lugar natural para decidir cuándo reconectar. `reconectar()`
- * permite al usuario forzar un nuevo intento manual.
+ * Reintenta automáticamente con backoff exponencial ante una desconexión
+ * inesperada (red caída); ante un cierre definitivo de la app (token
+ * vencido, sesión inactiva) no reintenta solo. `reconectar()` sigue
+ * disponible para forzar un reinicio manual completo (p. ej. desde el
+ * botón de error del docente).
  */
 export function useSesionSocket(
   codigo: string | null,

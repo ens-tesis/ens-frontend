@@ -3,11 +3,11 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import axios from "axios";
 import { useState } from "react";
-import { Boton } from "@/components/Boton";
-import { Campo } from "@/components/Campo";
-import { MensajeEstado } from "@/components/MensajeEstado";
-import { api } from "@/lib/api";
-import type { WhitelistUrl } from "@/lib/sesionesTypes";
+import { Boton } from "@/shared/components/Boton";
+import { Campo } from "@/shared/components/Campo";
+import { MensajeEstado } from "@/shared/components/MensajeEstado";
+import { api } from "@/shared/api/client";
+import type { WhitelistUrl } from "@/shared/types/sesiones";
 
 interface WhitelistPanelProps {
   codigo: string;

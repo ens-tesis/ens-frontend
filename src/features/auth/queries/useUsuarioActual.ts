@@ -3,8 +3,8 @@
 import { useQuery, type UseQueryResult } from "@tanstack/react-query";
 import { useRouter } from "next/navigation";
 import { useEffect } from "react";
-import { api } from "./api";
-import { clearToken, getToken, type Usuario } from "./session";
+import { api } from "@/shared/api/client";
+import { clearToken, getToken, type Usuario } from "../services/session";
 
 interface MeResponse {
   usuario: Usuario;

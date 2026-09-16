@@ -28,7 +28,11 @@ interface MeResponse {
 }
 
 function rutaPorRol(rol: Rol): string {
-  return rol === "docente" ? "/docente" : "/alumno";
+  if (rol === "docente") return "/docente";
+  if (rol === "alumno") return "/alumno";
+  // admin, director, preceptor: todavía no tienen pantalla propia más
+  // allá del alta de cuentas (ver AdminUsuariosView).
+  return "/admin";
 }
 
 function extraerMensajeError(err: unknown): string {

@@ -6,13 +6,15 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { api } from "@/shared/api/client";
-import type { Rol, Usuario } from "../services/session";
+import type { Usuario } from "../services/session";
 
+// Registro público: siempre alumno. Cuentas con un rol superior se dan
+// de alta solo vía /admin/usuarios (ver AdminUsuariosView), autenticado
+// y limitado por jerarquía — nunca por auto-registro acá.
 interface RegistroInput {
   nombre: string;
   email: string;
   password: string;
-  rol: Rol;
 }
 
 interface RegistroResponse {
@@ -32,7 +34,6 @@ export default function RegistroView() {
     nombre: "",
     email: "",
     password: "",
-    rol: "alumno",
   });
 
   const mutation = useMutation({
@@ -96,21 +97,6 @@ export default function RegistroView() {
             onChange={(e) => setForm({ ...form, password: e.target.value })}
             className="w-full rounded border border-black/[.08] px-3 py-2 text-sm dark:border-white/[.145] dark:bg-black"
           />
-        </div>
-
-        <div className="space-y-1">
-          <label htmlFor="rol" className="text-sm text-zinc-600 dark:text-zinc-400">
-            Rol
-          </label>
-          <select
-            id="rol"
-            value={form.rol}
-            onChange={(e) => setForm({ ...form, rol: e.target.value as Rol })}
-            className="w-full rounded border border-black/[.08] px-3 py-2 text-sm dark:border-white/[.145] dark:bg-black"
-          >
-            <option value="alumno">Alumno</option>
-            <option value="docente">Docente</option>
-          </select>
         </div>
 
         {mutation.isError && (

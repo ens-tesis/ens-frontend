@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import type { ParticipanteConectado, SesionWsMessage, WhitelistUrl } from "./sesionesTypes";
+import type { ParticipanteConectado, SesionWsMessage, WhitelistUrl } from "../types/sesiones";
 
 export type EstadoConexionWs =
   | "inactivo"

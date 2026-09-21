@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Tarjeta } from "@/components/Tarjeta";
+import { Tarjeta } from "@/shared/components/Tarjeta";
 
 interface CodigoSesionProps {
   codigo: string;

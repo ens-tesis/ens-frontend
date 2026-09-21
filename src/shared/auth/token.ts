@@ -1,13 +1,8 @@
-export type Rol = "alumno" | "docente";
-
-export interface Usuario {
-  id: number;
-  email: string;
-  nombre: string;
-  rol: Rol;
-  createdAt: string;
-}
-
+// Vive en shared (no en features/auth) porque el cliente Axios de
+// shared/api necesita leer el token para el header de todas las
+// requests, y shared no debe depender de un feature. features/auth
+// re-exporta estas funciones como parte de su API pública.
+//
 // Limitación conocida (aceptable para el timeline de este piloto): el JWT
 // vive en localStorage, así que queda expuesto a XSS si algún día se
 // carga contenido de terceros sin sanitizar, y no hay invalidación

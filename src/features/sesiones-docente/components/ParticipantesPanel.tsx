@@ -1,6 +1,6 @@
-import { Badge } from "@/components/Badge";
-import { MensajeEstado } from "@/components/MensajeEstado";
-import type { ParticipanteConectado } from "@/lib/sesionesTypes";
+import { Badge } from "@/shared/components/Badge";
+import { MensajeEstado } from "@/shared/components/MensajeEstado";
+import type { ParticipanteConectado } from "@/shared/types/sesiones";
 
 interface ParticipantesPanelProps {
   participantes: ParticipanteConectado[];

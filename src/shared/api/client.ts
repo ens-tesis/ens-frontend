@@ -1,5 +1,5 @@
 import axios from "axios";
-import { getToken } from "./session";
+import { getToken } from "../auth/token";
 
 export const api = axios.create({
   baseURL: process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:3001",

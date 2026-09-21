@@ -13,6 +13,7 @@ import type { Usuario } from "../services/session";
 // y limitado por jerarquía — nunca por auto-registro acá.
 interface RegistroInput {
   nombre: string;
+  apellido: string;
   email: string;
   password: string;
 }
@@ -32,6 +33,7 @@ export default function RegistroView() {
   const router = useRouter();
   const [form, setForm] = useState<RegistroInput>({
     nombre: "",
+    apellido: "",
     email: "",
     password: "",
   });
@@ -66,6 +68,19 @@ export default function RegistroView() {
             required
             value={form.nombre}
             onChange={(e) => setForm({ ...form, nombre: e.target.value })}
+            className="w-full rounded border border-black/[.08] px-3 py-2 text-sm dark:border-white/[.145] dark:bg-black"
+          />
+        </div>
+
+        <div className="space-y-1">
+          <label htmlFor="apellido" className="text-sm text-zinc-600 dark:text-zinc-400">
+            Apellido
+          </label>
+          <input
+            id="apellido"
+            required
+            value={form.apellido}
+            onChange={(e) => setForm({ ...form, apellido: e.target.value })}
             className="w-full rounded border border-black/[.08] px-3 py-2 text-sm dark:border-white/[.145] dark:bg-black"
           />
         </div>

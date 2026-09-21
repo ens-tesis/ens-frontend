@@ -1,11 +1,20 @@
 import { Badge } from "@/shared/components/Badge";
 import { MensajeEstado } from "@/shared/components/MensajeEstado";
-import type { ParticipanteConectado } from "@/shared/types/sesiones";
+import type { EstadoPresencia, ParticipanteConectado } from "@/shared/types/sesiones";
 
 interface ParticipantesPanelProps {
   participantes: ParticipanteConectado[];
   cargando: boolean;
 }
+
+const ETIQUETA_ESTADO: Record<EstadoPresencia, string> = {
+  conectado: "Conectado",
+  fuera_de_foco: "Fuera de foco",
+  ausente_digital: "Ausente digital",
+  pantalla_suspendida: "Pantalla suspendida",
+  sin_red: "Sin red",
+  desconectado: "Desconectado",
+};
 
 export function ParticipantesPanel({ participantes, cargando }: ParticipantesPanelProps) {
   return (
@@ -28,7 +37,7 @@ export function ParticipantesPanel({ participantes, cargando }: ParticipantesPan
               <span className="text-sm text-carbon">
                 {p.nombre} {p.apellido}
               </span>
-              <Badge variante="celeste">{p.estadoActual}</Badge>
+              <Badge variante="celeste">{ETIQUETA_ESTADO[p.estadoActual]}</Badge>
             </li>
           ))}
         </ul>

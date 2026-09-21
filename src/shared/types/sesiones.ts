@@ -56,3 +56,10 @@ export interface ParticipantesUpdateMessage {
 }
 
 export type SesionWsMessage = WhitelistUpdateMessage | ParticipantesUpdateMessage;
+
+// Único mensaje que manda el cliente (alumno) hoy: reporte de foco de la
+// pestaña. Ver useSesionSocket.ts (enviarMensaje) y sesiones.ws.ts (backend).
+export interface PresenciaClienteMessage {
+  type: "presencia";
+  estado: "conectado" | "fuera_de_foco";
+}

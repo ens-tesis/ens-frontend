@@ -33,6 +33,24 @@ export default function AlumnoView() {
 
   const token = getToken();
   const socket = useSesionSocket(codigoConectado, token);
+  const { enviarMensaje } = socket;
+
+  // Le avisa al backend cuando esta pestaña deja de estar en foco (u
+  // vuelve) — ver "Fuera de Foco"/"Ausente Digital" en sesiones.ws.ts.
+  // Solo tiene sentido reportarlo con el socket ya conectado.
+  useEffect(() => {
+    if (socket.estado !== "conectado") return;
+
+    function reportarFoco(): void {
+      enviarMensaje({
+        type: "presencia",
+        estado: document.hidden ? "fuera_de_foco" : "conectado",
+      });
+    }
+
+    document.addEventListener("visibilitychange", reportarFoco);
+    return () => document.removeEventListener("visibilitychange", reportarFoco);
+  }, [socket.estado, enviarMensaje]);
 
   function conectar(e: FormEvent<HTMLFormElement>): void {
     e.preventDefault();

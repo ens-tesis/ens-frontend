@@ -1,7 +1,12 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import type { ParticipanteConectado, SesionWsMessage, WhitelistUrl } from "../types/sesiones";
+import { useEffect, useRef, useState } from "react";
+import type {
+  ParticipanteConectado,
+  PresenciaClienteMessage,
+  SesionWsMessage,
+  WhitelistUrl,
+} from "../types/sesiones";
 
 export type EstadoConexionWs =
   | "inactivo"
@@ -25,6 +30,7 @@ interface UseSesionSocketResult {
   // en vez de inferirlo del largo de los arrays).
   sincronizado: boolean;
   reconectar: () => void;
+  enviarMensaje: (mensaje: PresenciaClienteMessage) => void;
 }
 
 interface ManejadoresConexion {
@@ -79,6 +85,7 @@ function conectarSesionSocket(
   codigo: string,
   token: string,
   handlers: ManejadoresConexion,
+  socketRef: { current: WebSocket | undefined },
 ): () => void {
   handlers.onReset();
 
@@ -93,6 +100,7 @@ function conectarSesionSocket(
     const url = `${WS_BASE_URL}/?codigo=${encodeURIComponent(codigo)}&token=${encodeURIComponent(token)}`;
     const socket = new WebSocket(url);
     socketActual = socket;
+    socketRef.current = socket;
 
     socket.onopen = () => {
       intentosFallidos = 0;
@@ -161,28 +169,34 @@ export function useSesionSocket(
   const [cierre, setCierre] = useState<CierreWs | null>(null);
   const [sincronizado, setSincronizado] = useState(false);
   const [intento, setIntento] = useState(0);
+  const socketRef = useRef<WebSocket>(undefined);
 
   useEffect(() => {
     if (!codigo || !token) {
       return;
     }
 
-    return conectarSesionSocket(codigo, token, {
-      onReset: () => {
-        setWhitelist([]);
-        setParticipantes([]);
-        setCierre(null);
-        setSincronizado(false);
+    return conectarSesionSocket(
+      codigo,
+      token,
+      {
+        onReset: () => {
+          setWhitelist([]);
+          setParticipantes([]);
+          setCierre(null);
+          setSincronizado(false);
+        },
+        onEstado: setEstado,
+        onWhitelist: setWhitelist,
+        onParticipantes: setParticipantes,
+        onMensajeRecibido: () => setSincronizado(true),
+        onCierre: (c) => {
+          setEstado("cerrado");
+          setCierre(c);
+        },
       },
-      onEstado: setEstado,
-      onWhitelist: setWhitelist,
-      onParticipantes: setParticipantes,
-      onMensajeRecibido: () => setSincronizado(true),
-      onCierre: (c) => {
-        setEstado("cerrado");
-        setCierre(c);
-      },
-    });
+      socketRef,
+    );
   }, [codigo, token, intento]);
 
   const estadoEfectivo: EstadoConexionWs = !codigo || !token ? "inactivo" : estado;
@@ -194,5 +208,10 @@ export function useSesionSocket(
     cierre,
     sincronizado,
     reconectar: () => setIntento((i) => i + 1),
+    enviarMensaje: (mensaje) => {
+      if (socketRef.current?.readyState === WebSocket.OPEN) {
+        socketRef.current.send(JSON.stringify(mensaje));
+      }
+    },
   };
 }

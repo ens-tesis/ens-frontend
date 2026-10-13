@@ -57,7 +57,26 @@ export default function AlumnoView() {
     }
   }
 
+  // La whitelist no valida formato en el backend (ver sesiones/dto/validation.ts
+  // — solo longitud), así que un valor como `javascript:...` o
+  // `data:text/html,<script>` podría llegar acá. Antes de este visor era
+  // inofensivo (solo se mostraba como texto); ahora que se carga como `src`
+  // de un iframe, hay que cortarlo acá, en el único lugar donde se abre una
+  // URL, antes de que llegue a montarse.
+  function esAbribleEnIframe(url: string): boolean {
+    try {
+      const protocolo = new URL(url).protocol;
+      return protocolo === "http:" || protocolo === "https:";
+    } catch {
+      return false;
+    }
+  }
+
   function abrirUrl(item: WhitelistUrl): void {
+    if (!esAbribleEnIframe(item.url)) {
+      setAvisoRevocado("Esa URL no se puede abrir.");
+      return;
+    }
     setAvisoRevocado(null);
     setUrlActiva(item);
   }

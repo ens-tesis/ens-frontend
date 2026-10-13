@@ -85,7 +85,20 @@ export function VisorEmbebido({ item, src, onVolver }: VisorEmbebidoProps) {
           src={src}
           onLoad={manejarCarga}
           title={hostnameDe(item.url)}
-          className="min-h-[60vh] flex-1 rounded-lg border border-carbon/10 bg-white"
+          className="min-h-[75vh] flex-1 rounded-lg border border-carbon/10 bg-white"
+          // Antes sin sandbox (capacidades totales). Modo "mirror" es HTML
+          // que generamos nosotros (sin scripts, ver lecturaArticulo.ts) —
+          // no necesita ninguna capacidad, se deniega todo. Modo "directo"
+          // es un sitio curado por el docente que sí necesita ejecutarse
+          // entero (YouTube, Forms, Maps) — se le da lo mínimo para
+          // funcionar, nunca acceso a hardware (cámara/mic/ubicación: fuera
+          // de alcance del proyecto, ver Limitaciones del anteproyecto).
+          sandbox={
+            item.modo === "mirror"
+              ? undefined
+              : "allow-scripts allow-same-origin allow-popups allow-forms allow-popups-to-escape-sandbox allow-presentation"
+          }
+          allow={item.modo === "mirror" ? undefined : "fullscreen; clipboard-write; picture-in-picture"}
         />
       )}
     </div>

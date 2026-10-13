@@ -11,6 +11,8 @@ import { Tarjeta } from "@/shared/components/Tarjeta";
 import { clearToken, getToken, useUsuarioActual } from "@/features/auth";
 import { mensajeDeCierre, useSesionSocket } from "@/shared/hooks/useSesionSocket";
 import { useSessionStorageInicial } from "@/shared/hooks/useSessionStorageInicial";
+import type { WhitelistUrl } from "@/shared/types/sesiones";
+import { VisorEmbebido } from "../components/VisorEmbebido";
 
 // Ver la misma nota en sesiones-docente/views/DocenteView.tsx sobre sessionStorage.
 const CLAVE_SESION_ACTIVA = "ens_sesion_conectada_codigo";
@@ -34,6 +36,31 @@ export default function AlumnoView() {
   const token = getToken();
   const socket = useSesionSocket(codigoConectado, token);
   const { enviarMensaje } = socket;
+
+  // Modelo "launcher": el alumno no navega libremente, elige un destino de
+  // la whitelist y se embebe de a uno. Si el docente lo saca de la
+  // whitelist mientras se está viendo, se corta al instante (ver RF-04).
+  const [urlActiva, setUrlActiva] = useState<WhitelistUrl | null>(null);
+  const [avisoRevocado, setAvisoRevocado] = useState<string | null>(null);
+
+  // Ajuste de estado durante el render (no un efecto): cada mensaje nuevo de
+  // whitelist_update trae un array nuevo por referencia (ver useSesionSocket),
+  // así que comparar !== detecta "llegó una actualización" sin necesitar un
+  // useEffect — patrón recomendado por React para ajustar estado derivado de
+  // una prop/estado externo que cambia, evita el lint de setState-en-efecto.
+  const [whitelistProcesada, setWhitelistProcesada] = useState(socket.whitelist);
+  if (socket.whitelist !== whitelistProcesada) {
+    setWhitelistProcesada(socket.whitelist);
+    if (urlActiva && !socket.whitelist.some((item) => item.id === urlActiva.id)) {
+      setUrlActiva(null);
+      setAvisoRevocado("El docente quitó esa página de los permitidos.");
+    }
+  }
+
+  function abrirUrl(item: WhitelistUrl): void {
+    setAvisoRevocado(null);
+    setUrlActiva(item);
+  }
 
   // Le avisa al backend cuando esta pestaña deja de estar en foco (u
   // vuelve) — ver "Fuera de Foco"/"Ausente Digital" en sesiones.ws.ts.
@@ -138,41 +165,48 @@ export default function AlumnoView() {
             </Tarjeta>
           )}
 
-          {(socket.estado === "conectado" || socket.estado === "reconectando") && (
-            <>
-              <Tarjeta variante="destacada" className="text-center">
-                <p className="text-sm text-arena/80">
-                  {socket.estado === "conectado" ? "Conectado a la clase" : "Reconectando..."}
-                </p>
-                <p className="mt-1 font-mono text-2xl font-bold tracking-[0.2em] text-arena">
-                  {codigoConectado}
-                </p>
-              </Tarjeta>
+          {(socket.estado === "conectado" || socket.estado === "reconectando") &&
+            (urlActiva ? (
+              <VisorEmbebido key={urlActiva.id} item={urlActiva} onVolver={() => setUrlActiva(null)} />
+            ) : (
+              <>
+                <Tarjeta variante="destacada" className="text-center">
+                  <p className="text-sm text-arena/80">
+                    {socket.estado === "conectado" ? "Conectado a la clase" : "Reconectando..."}
+                  </p>
+                  <p className="mt-1 font-mono text-2xl font-bold tracking-[0.2em] text-arena">
+                    {codigoConectado}
+                  </p>
+                </Tarjeta>
 
-              <div className="space-y-3">
-                <h2 className="text-base font-semibold text-carbon">Sitios permitidos</h2>
-                {!socket.sincronizado ? (
-                  <MensajeEstado tipo="cargando">Cargando whitelist...</MensajeEstado>
-                ) : socket.whitelist.length === 0 ? (
-                  <MensajeEstado tipo="vacio">
-                    El docente todavía no habilitó ninguna URL.
-                  </MensajeEstado>
-                ) : (
-                  <ul className="space-y-2">
-                    {socket.whitelist.map((item) => (
-                      <li
-                        key={item.id}
-                        className="flex items-center gap-2 rounded-lg border border-carbon/10 bg-arena px-4 py-3"
-                      >
-                        <Badge variante="celeste">Permitido</Badge>
-                        <span className="text-sm break-all text-carbon">{item.url}</span>
-                      </li>
-                    ))}
-                  </ul>
-                )}
-              </div>
-            </>
-          )}
+                <div className="space-y-3">
+                  <h2 className="text-base font-semibold text-carbon">Sitios permitidos</h2>
+                  {avisoRevocado && <MensajeEstado tipo="error">{avisoRevocado}</MensajeEstado>}
+                  {!socket.sincronizado ? (
+                    <MensajeEstado tipo="cargando">Cargando whitelist...</MensajeEstado>
+                  ) : socket.whitelist.length === 0 ? (
+                    <MensajeEstado tipo="vacio">
+                      El docente todavía no habilitó ninguna URL.
+                    </MensajeEstado>
+                  ) : (
+                    <ul className="space-y-2">
+                      {socket.whitelist.map((item) => (
+                        <li key={item.id}>
+                          <button
+                            type="button"
+                            onClick={() => abrirUrl(item)}
+                            className="flex w-full items-center gap-2 rounded-lg border border-carbon/10 bg-arena px-4 py-3 text-left transition-colors hover:bg-carbon/5"
+                          >
+                            <Badge variante="celeste">Permitido</Badge>
+                            <span className="text-sm break-all text-carbon">{item.url}</span>
+                          </button>
+                        </li>
+                      ))}
+                    </ul>
+                  )}
+                </div>
+              </>
+            ))}
         </div>
       )}
     </div>

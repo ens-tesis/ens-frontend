@@ -24,6 +24,7 @@ export interface WhitelistUrl {
   url: string;
   agregadoPor: number;
   activo: boolean;
+  modo: "directo" | "mirror";
   createdAt: string;
   removedAt: string | null;
 }

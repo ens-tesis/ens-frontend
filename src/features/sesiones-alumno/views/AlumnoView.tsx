@@ -81,6 +81,17 @@ export default function AlumnoView() {
     setUrlActiva(item);
   }
 
+  // En modo "mirror" el iframe no apunta al sitio original (eso es
+  // justamente lo que no se puede embeber) sino a nuestro propio endpoint,
+  // que sirve una versión de lectura extraída server-side (ver
+  // verificarEmbebible.ts / mirror.controller.ts en el backend).
+  function srcDe(item: WhitelistUrl): string {
+    if (item.modo !== "mirror") return item.url;
+    const apiUrl = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:3001";
+    const params = new URLSearchParams({ url: item.url, token: token ?? "" });
+    return `${apiUrl}/mirror?${params.toString()}`;
+  }
+
   // Le avisa al backend cuando esta pestaña deja de estar en foco (u
   // vuelve) — ver "Fuera de Foco"/"Ausente Digital" en sesiones.ws.ts.
   // Solo tiene sentido reportarlo con el socket ya conectado.
@@ -186,7 +197,12 @@ export default function AlumnoView() {
 
           {(socket.estado === "conectado" || socket.estado === "reconectando") &&
             (urlActiva ? (
-              <VisorEmbebido key={urlActiva.id} item={urlActiva} onVolver={() => setUrlActiva(null)} />
+              <VisorEmbebido
+                key={urlActiva.id}
+                item={urlActiva}
+                src={srcDe(urlActiva)}
+                onVolver={() => setUrlActiva(null)}
+              />
             ) : (
               <>
                 <Tarjeta variante="destacada" className="text-center">

@@ -6,11 +6,13 @@ import { useEffect, useState } from "react";
 import { Badge } from "@/shared/components/Badge";
 import { Boton } from "@/shared/components/Boton";
 import { Campo } from "@/shared/components/Campo";
+import { IconoModo } from "@/shared/components/IconoModo";
 import { MensajeEstado } from "@/shared/components/MensajeEstado";
 import { Tarjeta } from "@/shared/components/Tarjeta";
 import { clearToken, getToken, useUsuarioActual } from "@/features/auth";
 import { mensajeDeCierre, useSesionSocket } from "@/shared/hooks/useSesionSocket";
 import { useSessionStorageInicial } from "@/shared/hooks/useSessionStorageInicial";
+import { hostnameDe } from "@/shared/lib/url";
 import type { WhitelistUrl } from "@/shared/types/sesiones";
 import { VisorEmbebido } from "../components/VisorEmbebido";
 
@@ -230,10 +232,15 @@ export default function AlumnoView() {
                           <button
                             type="button"
                             onClick={() => abrirUrl(item)}
-                            className="flex w-full items-center gap-2 rounded-lg border border-carbon/10 bg-arena px-4 py-3 text-left transition-colors hover:bg-carbon/5"
+                            className="flex w-full items-center gap-3 rounded-lg border border-carbon/10 bg-arena px-4 py-3 text-left transition-colors hover:bg-carbon/5"
                           >
-                            <Badge variante="celeste">Permitido</Badge>
-                            <span className="text-sm break-all text-carbon">{item.url}</span>
+                            <IconoModo modo={item.modo} className="size-4 shrink-0 text-carbon/50" />
+                            <span className="min-w-0 flex-1 truncate text-sm font-medium text-carbon">
+                              {hostnameDe(item.url)}
+                            </span>
+                            <Badge variante={item.modo === "mirror" ? "celeste" : "verde"}>
+                              {item.modo === "mirror" ? "Lectura" : "Permitido"}
+                            </Badge>
                           </button>
                         </li>
                       ))}

@@ -3,10 +3,13 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import axios from "axios";
 import { useState } from "react";
+import { Badge } from "@/shared/components/Badge";
 import { Boton } from "@/shared/components/Boton";
 import { Campo } from "@/shared/components/Campo";
+import { IconoModo } from "@/shared/components/IconoModo";
 import { MensajeEstado } from "@/shared/components/MensajeEstado";
 import { api } from "@/shared/api/client";
+import { hostnameDe } from "@/shared/lib/url";
 import type { WhitelistUrl } from "@/shared/types/sesiones";
 
 interface WhitelistPanelProps {
@@ -117,37 +120,41 @@ export function WhitelistPanel({ codigo, whitelist, cargando }: WhitelistPanelPr
       </form>
 
       {bloqueo ? (
-        <div className="space-y-2 rounded-lg border border-carbon/10 bg-arena p-3">
-          <MensajeEstado tipo="error">Este sitio no permite mostrarse embebido en el ENS.</MensajeEstado>
+        <div className="space-y-3 rounded-lg border border-carbon/15 bg-arena p-4">
+          <p className="text-sm text-carbon/70">Ese link no se puede mostrar embebido tal cual.</p>
           {bloqueo.sugerenciaEmbed ? (
-            <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-              <span className="text-sm break-all text-carbon/80">
-                ¿Quisiste decir <span className="font-mono">{bloqueo.sugerenciaEmbed}</span>?
-              </span>
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+              <div className="flex min-w-0 items-center gap-2">
+                <Badge variante="celeste">Sugerencia</Badge>
+                <span className="truncate text-sm text-carbon/80" title={bloqueo.sugerenciaEmbed}>
+                  {hostnameDe(bloqueo.sugerenciaEmbed)}
+                </span>
+              </div>
               <Boton
-                variante="sutil"
                 cargando={agregar.isPending}
                 onClick={() => intentarAgregar(bloqueo.sugerenciaEmbed as string)}
+                className="shrink-0"
               >
-                Agregar esta URL
+                Usar esta URL
               </Boton>
             </div>
           ) : bloqueo.mirrorDisponible ? (
-            <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-              <span className="text-sm text-carbon/80">
-                Podemos mostrarlo en modo lectura (solo texto e imágenes, sin video ni formularios).
-              </span>
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+              <div className="flex items-center gap-2">
+                <Badge variante="celeste">Modo lectura</Badge>
+                <span className="text-sm text-carbon/80">Solo texto e imágenes, sin video ni formularios.</span>
+              </div>
               <Boton
-                variante="sutil"
                 cargando={agregar.isPending}
                 onClick={() => agregar.mutate({ url: bloqueo.url, aceptarModoLectura: true })}
+                className="shrink-0"
               >
-                Agregar en modo lectura
+                Agregar así
               </Boton>
             </div>
           ) : (
             <p className="text-sm text-carbon/70">
-              No pudimos encontrar una alternativa para este sitio. Probá con otro recurso.
+              No encontramos una alternativa para este sitio — probá con otro recurso.
             </p>
           )}
         </div>
@@ -169,12 +176,18 @@ export function WhitelistPanel({ codigo, whitelist, cargando }: WhitelistPanelPr
               key={item.id}
               className="flex items-center justify-between gap-3 rounded-lg border border-carbon/10 bg-arena px-4 py-3"
             >
-              <span className="text-sm break-all text-carbon">
-                {item.url}
-                {item.modo === "mirror" && (
-                  <span className="ml-2 text-xs text-carbon/60">(modo lectura)</span>
-                )}
-              </span>
+              <div className="flex min-w-0 items-center gap-3">
+                <IconoModo modo={item.modo} className="size-4 shrink-0 text-carbon/50" />
+                <div className="min-w-0">
+                  <div className="flex items-center gap-2">
+                    <span className="truncate text-sm font-medium text-carbon">{hostnameDe(item.url)}</span>
+                    {item.modo === "mirror" && <Badge variante="celeste">Lectura</Badge>}
+                  </div>
+                  <p className="truncate text-xs text-carbon/55" title={item.url}>
+                    {item.url}
+                  </p>
+                </div>
+              </div>
               <Boton
                 variante="sutil"
                 cargando={quitar.isPending && quitar.variables === item.id}

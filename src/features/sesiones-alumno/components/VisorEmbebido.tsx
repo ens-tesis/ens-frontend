@@ -8,20 +8,24 @@ import { MensajeEstado } from "@/shared/components/MensajeEstado";
 import { hostnameDe } from "@/shared/lib/url";
 import type { WhitelistUrl } from "@/shared/types/sesiones";
 
-// Heurística, no detección exacta: muchos bloqueos por X-Frame-Options/CSP
-// igual disparan `onLoad` (el navegador "cargó" un frame vacío/de error), así
-// que este timeout no atrapa todos los casos — es lo mejor disponible desde
-// JS cross-origin, sin acceso al contenido del iframe. Solo aplica a modo
-// "directo": en modo "mirror" el iframe apunta a nuestro propio origen, que
-// nunca va a rechazar embeberse, así que no tiene sentido tratarlo como un
-// posible bloqueo — ver TIMEOUT_MIRROR_MS más abajo.
-const TIMEOUT_CARGA_MS = 4000;
+// Heurística, no detección exacta — y ya sabíamos que era floja (muchos
+// bloqueos por X-Frame-Options/CSP igual disparan `onLoad`, el navegador
+// "cargó" un frame vacío/de error). Probando con el campus virtual real de
+// la institución piloto (Moodle, muchos assets) encontramos que además
+// genera falsos positivos: tardó entre 20 y 22s en completar su `load`
+// event según la corrida, y con un timeout corto se mostraba "no se puede
+// mostrar" sobre el recurso que más necesitan los alumnos, que en realidad
+// cargaba perfecto. Dado que esta heurística ya no sirve para detectar
+// bloqueos de forma confiable, se la deja de tratar como eso: es solo una
+// red de seguridad ante una conexión realmente muerta, no un detector —
+// mejor que el alumno espere de más a que se le diga, de forma incorrecta,
+// que algo no funciona.
+const TIMEOUT_CARGA_MS = 60000;
 
-// Más generoso que el de modo directo: acá no estamos adivinando si el
-// sitio nos bloqueó, solo esperando que termine de cargar (texto + todas
-// las imágenes del artículo extraído) — medido empíricamente, una portada
-// con varias noticias puede tardar ~4s solo en imágenes.
-const TIMEOUT_MIRROR_MS = 15000;
+// Mismo criterio que el de modo directo (ver arriba): acá ni siquiera hay
+// posibilidad real de bloqueo (el iframe apunta a nuestro propio origen),
+// así que este timeout también es pura red de seguridad, no un detector.
+const TIMEOUT_MIRROR_MS = 60000;
 
 interface VisorEmbebidoProps {
   item: WhitelistUrl;

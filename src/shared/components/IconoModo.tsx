@@ -1,5 +1,5 @@
 interface IconoModoProps {
-  modo: "directo" | "mirror";
+  modo: "directo" | "mirror" | "proxy_general";
   className?: string;
 }
 
@@ -8,6 +8,18 @@ interface IconoModoProps {
 // documento/libro para "mirror" (lectura). currentColor: hereda el color
 // de texto de donde se use, no inventa un tono nuevo fuera de la paleta.
 export function IconoModo({ modo, className }: IconoModoProps) {
+  if (modo === "proxy_general") {
+    return (
+      <svg viewBox="0 0 20 20" fill="none" className={className} aria-hidden="true">
+        <path
+          d="M10 2.5 16 5v5c0 4-2.7 6.3-6 7.5C6.7 16.3 4 14 4 10V5z"
+          stroke="currentColor"
+          strokeWidth="1.4"
+          strokeLinejoin="round"
+        />
+      </svg>
+    );
+  }
   if (modo === "mirror") {
     return (
       <svg viewBox="0 0 20 20" fill="none" className={className} aria-hidden="true">

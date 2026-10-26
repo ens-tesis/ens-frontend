@@ -88,10 +88,11 @@ export default function AlumnoView() {
   // que sirve una versión de lectura extraída server-side (ver
   // verificarEmbebible.ts / mirror.controller.ts en el backend).
   function srcDe(item: WhitelistUrl): string {
-    if (item.modo !== "mirror") return item.url;
+    if (item.modo === "directo") return item.url;
     const apiUrl = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:3001";
+    const ruta = item.modo === "proxy_general" ? "mirror/pagina" : "mirror";
     const params = new URLSearchParams({ url: item.url, token: token ?? "" });
-    return `${apiUrl}/mirror?${params.toString()}`;
+    return `${apiUrl}/${ruta}?${params.toString()}`;
   }
 
   // Le avisa al backend cuando esta pestaña deja de estar en foco (u

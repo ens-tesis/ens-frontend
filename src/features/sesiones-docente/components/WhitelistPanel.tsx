@@ -182,6 +182,7 @@ export function WhitelistPanel({ codigo, whitelist, cargando }: WhitelistPanelPr
                   <div className="flex items-center gap-2">
                     <span className="truncate text-sm font-medium text-carbon">{hostnameDe(item.url)}</span>
                     {item.modo === "mirror" && <Badge variante="celeste">Lectura</Badge>}
+                    {item.modo === "proxy_general" && <Badge variante="verde">Bloqueo real</Badge>}
                   </div>
                   <p className="truncate text-xs text-carbon/55" title={item.url}>
                     {item.url}

@@ -45,7 +45,7 @@ export function VisorEmbebido({ item, src, onVolver }: VisorEmbebidoProps) {
   // que cada URL nueva es un montaje nuevo: no hace falta resetear
   // `cargada`/`fallo` a mano, arrancan limpios solos.
   useEffect(() => {
-    const timeout = item.modo === "mirror" ? TIMEOUT_MIRROR_MS : TIMEOUT_CARGA_MS;
+    const timeout = item.modo === "directo" ? TIMEOUT_CARGA_MS : TIMEOUT_MIRROR_MS;
     timerRef.current = setTimeout(() => setFallo(true), timeout);
     return () => clearTimeout(timerRef.current);
   }, [item.modo]);
@@ -64,6 +64,7 @@ export function VisorEmbebido({ item, src, onVolver }: VisorEmbebidoProps) {
           <IconoModo modo={item.modo} className="size-4 shrink-0 text-carbon/50" />
           <span className="truncate text-sm font-medium text-carbon">{hostnameDe(item.url)}</span>
           {item.modo === "mirror" && <Badge variante="celeste">Lectura</Badge>}
+          {item.modo === "proxy_general" && <Badge variante="verde">Bloqueo real</Badge>}
         </div>
         <Boton variante="sutil" onClick={onVolver} className="shrink-0">
           Volver
@@ -73,7 +74,7 @@ export function VisorEmbebido({ item, src, onVolver }: VisorEmbebidoProps) {
       {bloqueado ? (
         <div className="flex flex-1 flex-col items-center justify-center gap-4 rounded-lg border border-carbon/10 bg-arena p-6 text-center">
           <MensajeEstado tipo="error">
-            {item.modo === "mirror"
+            {item.modo !== "directo"
               ? "No se pudo cargar la versión de lectura. Probá de nuevo en un momento."
               : "Este sitio no se puede mostrar acá. Puede que no permita abrirse dentro del ENS."}
           </MensajeEstado>
@@ -112,11 +113,13 @@ export function VisorEmbebido({ item, src, onVolver }: VisorEmbebidoProps) {
             // situación que "mirror", que es contenido de un tercero no
             // confiable.
             sandbox={
-              item.modo === "mirror"
-                ? ""
-                : "allow-scripts allow-same-origin allow-popups allow-forms allow-popups-to-escape-sandbox allow-presentation"
+              item.modo === "directo"
+                ? "allow-scripts allow-same-origin allow-popups allow-forms allow-popups-to-escape-sandbox allow-presentation"
+                : item.modo === "proxy_general"
+                  ? "allow-scripts allow-same-origin allow-forms"
+                  : ""
             }
-            allow={item.modo === "mirror" ? undefined : "fullscreen; clipboard-write; picture-in-picture"}
+            allow={item.modo === "directo" ? "fullscreen; clipboard-write; picture-in-picture" : undefined}
           />
         </div>
       )}

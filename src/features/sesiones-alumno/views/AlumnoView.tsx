@@ -240,7 +240,11 @@ export default function AlumnoView() {
                               {hostnameDe(item.url)}
                             </span>
                             <Badge variante={item.modo === "mirror" ? "celeste" : "verde"}>
-                              {item.modo === "mirror" ? "Lectura" : "Permitido"}
+                              {item.modo === "mirror"
+                                ? "Lectura"
+                                : item.modo === "proxy_general"
+                                  ? "Bloqueo real"
+                                  : "Permitido"}
                             </Badge>
                           </button>
                         </li>

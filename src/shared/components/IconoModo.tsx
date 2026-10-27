@@ -4,9 +4,11 @@ interface IconoModoProps {
 }
 
 // Un signo visual rápido de qué tipo de recurso es, sin depender de leer
-// el texto "(modo lectura)" — un link externo clásico para "directo", un
-// documento/libro para "mirror" (lectura). currentColor: hereda el color
-// de texto de donde se use, no inventa un tono nuevo fuera de la paleta.
+// el texto del badge — un link externo clásico para "directo", un
+// documento/libro para "mirror" (lectura), y un escudo para "proxy_general"
+// (el sitio real, pero servido reescrito desde nuestro origen — bloqueo
+// real de navegación, no solo lectura). currentColor: hereda el color de
+// texto de donde se use, no inventa un tono nuevo fuera de la paleta.
 export function IconoModo({ modo, className }: IconoModoProps) {
   if (modo === "proxy_general") {
     return (

@@ -83,10 +83,15 @@ export default function AlumnoView() {
     setUrlActiva(item);
   }
 
-  // En modo "mirror" el iframe no apunta al sitio original (eso es
-  // justamente lo que no se puede embeber) sino a nuestro propio endpoint,
-  // que sirve una versión de lectura extraída server-side (ver
-  // verificarEmbebible.ts / mirror.controller.ts en el backend).
+  // En modo "directo" el iframe apunta al sitio original tal cual. En los
+  // otros dos modos no (eso es justamente lo que no se puede embeber
+  // directo) sino a nuestros propios endpoints, que sirven una versión
+  // generada server-side a partir del sitio original (ver
+  // verificarEmbebible.ts / mirror.controller.ts en el backend): "mirror" es
+  // una versión de lectura extraída (solo texto/imágenes, sin scripts) vía
+  // /mirror; "proxy_general" es el HTML real del sitio reescrito para
+  // servirse desde nuestro origen, con su JS/CSS intactos, vía
+  // /mirror/pagina (ver reescritorHtml.ts).
   function srcDe(item: WhitelistUrl): string {
     if (item.modo === "directo") return item.url;
     const apiUrl = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:3001";

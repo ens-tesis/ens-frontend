@@ -153,15 +153,20 @@ export default function AlumnoView() {
 
   return (
     <div className="mx-auto flex w-full max-w-md flex-1 flex-col gap-6 px-4 py-6">
-      <header className="flex items-center justify-between gap-4">
-        <div>
-          <h1 className="text-lg font-semibold text-carbon">ENS</h1>
-          <p className="text-xs text-carbon/70">{usuario.nombre}</p>
-        </div>
-        <Boton variante="sutil" onClick={cerrarSesion}>
-          Salir
-        </Boton>
-      </header>
+      {/* Oculto mientras se ve un iframe (urlActiva): la barra propia de
+          VisorEmbebido (hostname + Volver) ya cubre la navegación, y sacar
+          este header le da más alto al iframe. */}
+      {!urlActiva && (
+        <header className="flex items-center justify-between gap-4">
+          <div>
+            <h1 className="text-lg font-semibold text-carbon">ENS</h1>
+            <p className="text-xs text-carbon/70">{usuario.nombre}</p>
+          </div>
+          <Boton variante="sutil" onClick={cerrarSesion}>
+            Salir
+          </Boton>
+        </header>
+      )}
 
       {!codigoConectado ? (
         <Tarjeta className="flex flex-col gap-4">

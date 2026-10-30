@@ -1,3 +1,4 @@
+import type { ComponentProps } from "react";
 import { Badge } from "@/shared/components/Badge";
 import { MensajeEstado } from "@/shared/components/MensajeEstado";
 import type { EstadoPresencia, ParticipanteConectado } from "@/shared/types/sesiones";
@@ -16,11 +17,20 @@ const ETIQUETA_ESTADO: Record<EstadoPresencia, string> = {
   desconectado: "Desconectado",
 };
 
+const COLOR_ESTADO: Record<EstadoPresencia, ComponentProps<typeof Badge>["variante"]> = {
+  conectado: "verde",
+  fuera_de_foco: "rojo",
+  ausente_digital: "rojo",
+  pantalla_suspendida: "amarillo",
+  sin_red: "amarillo",
+  desconectado: "rojo",
+};
+
 export function ParticipantesPanel({ participantes, cargando }: ParticipantesPanelProps) {
   return (
     <div className="space-y-4">
       <h2 className="flex items-center gap-2 text-lg font-semibold text-carbon">
-        Participantes conectados <Badge variante="celeste">{participantes.length}</Badge>
+        Participantes <Badge variante="celeste">{participantes.length}</Badge>
       </h2>
 
       {cargando ? (
@@ -37,7 +47,7 @@ export function ParticipantesPanel({ participantes, cargando }: ParticipantesPan
               <span className="text-sm text-carbon">
                 {p.nombre} {p.apellido}
               </span>
-              <Badge variante="celeste">{ETIQUETA_ESTADO[p.estadoActual]}</Badge>
+              <Badge variante={COLOR_ESTADO[p.estadoActual]}>{ETIQUETA_ESTADO[p.estadoActual]}</Badge>
             </li>
           ))}
         </ul>

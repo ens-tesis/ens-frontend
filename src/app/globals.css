@@ -37,6 +37,13 @@
    * de contraste sobre arena, pasa AA.
    */
   --color-error: #9a2e2e;
+
+  /*
+   * Segunda excepción, mismo motivo: "advertencia" (alumno sin red, puede
+   * volver solo) necesita un tono propio distinto del error. Ámbar oscuro
+   * para que el badge se distinga del fondo arena; carbon encima: 6.2:1 (AA).
+   */
+  --color-alerta: #d99a1e;
 }
 
 /* inline: los valores de next/font se setean en runtime como CSS vars

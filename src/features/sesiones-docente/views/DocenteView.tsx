@@ -12,6 +12,8 @@ import { clearToken, getToken, useUsuarioActual } from "@/features/auth";
 import type { Sesion, SesionCompleta } from "@/shared/types/sesiones";
 import { useSesionSocket } from "@/shared/hooks/useSesionSocket";
 import { useSessionStorageInicial } from "@/shared/hooks/useSessionStorageInicial";
+import { NotificacionesCampana } from "@/features/notificaciones";
+import { useCursos } from "@/features/reportes";
 import { CodigoSesion } from "../components/CodigoSesion";
 import { ParticipantesPanel } from "../components/ParticipantesPanel";
 import { WhitelistPanel } from "../components/WhitelistPanel";
@@ -38,6 +40,8 @@ export default function DocenteView() {
   const usuarioQuery = useUsuarioActual();
   const codigoGuardado = useSessionStorageInicial(CLAVE_SESION_ACTIVA);
   const [codigoNuevo, setCodigoNuevo] = useState<string | null>(null);
+  const [cursoId, setCursoId] = useState("");
+  const cursos = useCursos(usuarioQuery.data?.usuario.rol === "docente");
   const codigoActivo = codigoNuevo ?? codigoGuardado;
 
   useEffect(() => {
@@ -57,7 +61,8 @@ export default function DocenteView() {
   });
 
   const crearSesion = useMutation({
-    mutationFn: () => api.post<CrearSesionResponse>("/sesiones"),
+    mutationFn: () =>
+      api.post<CrearSesionResponse>("/sesiones", { cursoId: cursoId ? Number(cursoId) : null }),
     onSuccess: (res) => {
       const { codigo } = res.data.sesion;
       window.sessionStorage.setItem(CLAVE_SESION_ACTIVA, codigo);
@@ -99,9 +104,12 @@ export default function DocenteView() {
             {usuario.nombre} · {usuario.email}
           </p>
         </div>
-        <Boton variante="sutil" onClick={cerrarSesion}>
+        <div className="flex items-center gap-2">
+          <NotificacionesCampana />
+          <Boton variante="sutil" onClick={cerrarSesion}>
           Cerrar sesión
         </Boton>
+        </div>
       </header>
 
       {!codigoActivo ? (
@@ -110,6 +118,21 @@ export default function DocenteView() {
             Creá una sesión para empezar la clase. Vas a recibir un código para
             compartir con tus alumnos.
           </p>
+          <label className="w-full max-w-xs space-y-1.5 text-left text-sm font-medium text-carbon">
+            <span className="block">Curso</span>
+            <select
+              value={cursoId}
+              onChange={(e) => setCursoId(e.target.value)}
+              className="min-h-11 w-full rounded-lg border border-carbon/20 bg-arena px-3.5 py-2.5 text-base text-carbon"
+            >
+              <option value="">Sin curso</option>
+              {(cursos.data ?? []).map((c) => (
+                <option key={c.id} value={c.id}>
+                  {c.nombre} ({c.anioLectivo})
+                </option>
+              ))}
+            </select>
+          </label>
           <Boton cargando={crearSesion.isPending} onClick={() => crearSesion.mutate()}>
             Crear nueva sesión
           </Boton>

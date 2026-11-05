@@ -24,6 +24,10 @@ export function rolesInferioresA(rol: Rol): Rol[] {
   return ROLES_CREABLES.filter((r) => ORDEN_JERARQUICO[r] < propio);
 }
 
+export function esRolInferior(rol: Rol, referencia: Rol): boolean {
+  return ORDEN_JERARQUICO[rol] < ORDEN_JERARQUICO[referencia];
+}
+
 export function puedeCrearUsuarios(rol: Rol): boolean {
   return rolesInferioresA(rol).length > 0;
 }

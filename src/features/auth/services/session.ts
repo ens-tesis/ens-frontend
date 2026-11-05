@@ -9,5 +9,7 @@ export interface Usuario {
   email: string;
   nombre: string;
   rol: Rol;
+  apellido?: string;
+  activo?: boolean;
   createdAt: string;
 }

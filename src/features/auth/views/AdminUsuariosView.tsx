@@ -13,6 +13,8 @@ import { useUsuarioActual } from "../queries/useUsuarioActual";
 import { clearToken } from "../services/session";
 import type { Rol, Usuario } from "../services/session";
 import { puedeCrearUsuarios, rolesInferioresA } from "../services/rolJerarquia";
+import { rutaPorRol } from "../services/rutaPorRol";
+import Link from "next/link";
 
 interface CrearUsuarioInput {
   nombre: string;
@@ -95,6 +97,10 @@ export default function AdminUsuariosView() {
           Cerrar sesión
         </Boton>
       </header>
+
+      <Link href={rutaPorRol(usuario.rol)} className="text-sm font-medium text-carbon underline underline-offset-2">
+        ← Volver al panel
+      </Link>
 
       <Tarjeta className="flex flex-col gap-4">
         <h2 className="text-base font-semibold text-carbon">Crear cuenta</h2>

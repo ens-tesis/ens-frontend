@@ -10,7 +10,8 @@ import { Campo } from "@/shared/components/Campo";
 import { MensajeEstado } from "@/shared/components/MensajeEstado";
 import { Tarjeta } from "@/shared/components/Tarjeta";
 import { api } from "@/shared/api/client";
-import { clearToken, setToken, type Rol, type Usuario } from "../services/session";
+import { rutaPorRol } from "../services/rutaPorRol";
+import { clearToken, setToken, type Usuario } from "../services/session";
 import { useTokenInicial } from "../services/useTokenInicial";
 
 interface LoginInput {
@@ -25,14 +26,6 @@ interface LoginResponse {
 
 interface MeResponse {
   usuario: Usuario;
-}
-
-function rutaPorRol(rol: Rol): string {
-  if (rol === "docente") return "/docente";
-  if (rol === "alumno") return "/alumno";
-  // admin, director, preceptor: todavía no tienen pantalla propia más
-  // allá del alta de cuentas (ver AdminUsuariosView).
-  return "/admin";
 }
 
 function extraerMensajeError(err: unknown): string {

@@ -1,30 +1,12 @@
-import type { ComponentProps } from "react";
 import { Badge } from "@/shared/components/Badge";
 import { MensajeEstado } from "@/shared/components/MensajeEstado";
-import type { EstadoPresencia, ParticipanteConectado } from "@/shared/types/sesiones";
+import { COLOR_ESTADO, ETIQUETA_ESTADO } from "@/shared/lib/presencia";
+import type { ParticipanteConectado } from "@/shared/types/sesiones";
 
 interface ParticipantesPanelProps {
   participantes: ParticipanteConectado[];
   cargando: boolean;
 }
-
-const ETIQUETA_ESTADO: Record<EstadoPresencia, string> = {
-  conectado: "Conectado",
-  fuera_de_foco: "Fuera de foco",
-  ausente_digital: "Ausente digital",
-  pantalla_suspendida: "Pantalla suspendida",
-  sin_red: "Sin red",
-  desconectado: "Desconectado",
-};
-
-const COLOR_ESTADO: Record<EstadoPresencia, ComponentProps<typeof Badge>["variante"]> = {
-  conectado: "verde",
-  fuera_de_foco: "rojo",
-  ausente_digital: "rojo",
-  pantalla_suspendida: "amarillo",
-  sin_red: "amarillo",
-  desconectado: "rojo",
-};
 
 export function ParticipantesPanel({ participantes, cargando }: ParticipantesPanelProps) {
   return (

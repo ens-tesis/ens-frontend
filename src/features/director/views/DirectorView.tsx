@@ -4,56 +4,66 @@ import { useState } from "react";
 import { useGuardRol } from "@/features/auth";
 import { NotificacionesCampana } from "@/features/notificaciones";
 import { Historial, useCursos } from "@/features/reportes";
-import { Encabezado } from "@/shared/components/Encabezado";
-import { MensajeEstado } from "@/shared/components/MensajeEstado";
-import { Pestanas } from "@/shared/components/Pestanas";
-import { Tarjeta } from "@/shared/components/Tarjeta";
+import { AppShell, PantallaCargando, type ItemNav } from "@/shared/components/AppShell";
 import { GestionCursos } from "../components/GestionCursos";
 import { GestionUsuarios } from "../components/GestionUsuarios";
 import { Metricas } from "../components/Metricas";
 
-type Pestana = "metricas" | "historial" | "cursos" | "usuarios";
+type Seccion = "metricas" | "historial" | "cursos" | "usuarios";
+
+const SECCIONES: (ItemNav<Seccion> & { descripcion: string })[] = [
+  {
+    id: "metricas",
+    etiqueta: "Métricas",
+    icono: "metricas",
+    descripcion: "Uso del ENS por curso o por docente. Filtrá por fechas y exportá a Excel.",
+  },
+  {
+    id: "historial",
+    etiqueta: "Historial",
+    icono: "historial",
+    descripcion: "Todas las clases de la institución, con quién estuvo y qué pasó en cada una.",
+  },
+  {
+    id: "cursos",
+    etiqueta: "Cursos",
+    icono: "cursos",
+    descripcion: "Creá cursos, matriculá alumnos y asigná preceptores.",
+  },
+  {
+    id: "usuarios",
+    etiqueta: "Usuarios",
+    icono: "usuarios",
+    descripcion: "Cambiá roles y activá o desactivá cuentas.",
+  },
+];
 
 // Admin entra a la misma pantalla: tiene todo lo del director y más.
 export default function DirectorView() {
   const { cargando, usuario } = useGuardRol(["director", "admin"]);
   const cursos = useCursos(Boolean(usuario));
-  const [pestana, setPestana] = useState<Pestana>("metricas");
+  const [seccion, setSeccion] = useState<Seccion>("metricas");
 
-  if (cargando) {
-    return (
-      <div className="flex flex-1 items-center justify-center px-4">
-        <MensajeEstado tipo="cargando">Cargando...</MensajeEstado>
-      </div>
-    );
-  }
+  if (cargando) return <PantallaCargando />;
   if (!usuario) return null;
 
+  const actual = SECCIONES.find((s) => s.id === seccion)!;
+
   return (
-    <div className="mx-auto flex w-full max-w-4xl flex-1 flex-col gap-6 px-4 py-8">
-      <Encabezado
-        titulo={`ENS · ${usuario.rol === "admin" ? "Administración" : "Dirección"}`}
-        subtitulo={`${usuario.nombre} · ${usuario.email}`}
-        acciones={<NotificacionesCampana />}
-      />
-
-      <Pestanas
-        opciones={[
-          { id: "metricas", etiqueta: "Métricas" },
-          { id: "historial", etiqueta: "Historial" },
-          { id: "cursos", etiqueta: "Cursos" },
-          { id: "usuarios", etiqueta: "Usuarios" },
-        ]}
-        activa={pestana}
-        onCambiar={setPestana}
-      />
-
-      <Tarjeta>
-        {pestana === "metricas" && <Metricas />}
-        {pestana === "historial" && <Historial cursos={cursos.data ?? []} />}
-        {pestana === "cursos" && <GestionCursos />}
-        {pestana === "usuarios" && <GestionUsuarios actor={usuario} />}
-      </Tarjeta>
-    </div>
+    <AppShell
+      area={usuario.rol === "admin" ? "Administración" : "Dirección"}
+      usuario={usuario}
+      secciones={SECCIONES}
+      activa={seccion}
+      onCambiar={setSeccion}
+      titulo={actual.etiqueta}
+      descripcion={actual.descripcion}
+      acciones={<NotificacionesCampana />}
+    >
+      {seccion === "metricas" && <Metricas />}
+      {seccion === "historial" && <Historial cursos={cursos.data ?? []} />}
+      {seccion === "cursos" && <GestionCursos />}
+      {seccion === "usuarios" && <GestionUsuarios actor={usuario} />}
+    </AppShell>
   );
 }

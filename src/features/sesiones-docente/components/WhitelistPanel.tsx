@@ -8,6 +8,7 @@ import { Boton } from "@/shared/components/Boton";
 import { Campo } from "@/shared/components/Campo";
 import { IconoModo } from "@/shared/components/IconoModo";
 import { MensajeEstado } from "@/shared/components/MensajeEstado";
+import { CLASE_FILA, Tarjeta } from "@/shared/components/Tarjeta";
 import { api } from "@/shared/api/client";
 import { hostnameDe } from "@/shared/lib/url";
 import type { WhitelistUrl } from "@/shared/types/sesiones";
@@ -94,8 +95,7 @@ export function WhitelistPanel({ codigo, whitelist, cargando }: WhitelistPanelPr
 
   return (
     <div className="space-y-4">
-      <h2 className="text-lg font-semibold text-carbon">Whitelist de URLs</h2>
-
+      <Tarjeta className="space-y-4">
       <form
         className="flex flex-col gap-3 sm:flex-row sm:items-end"
         onSubmit={(e) => {
@@ -120,7 +120,7 @@ export function WhitelistPanel({ codigo, whitelist, cargando }: WhitelistPanelPr
       </form>
 
       {bloqueo ? (
-        <div className="space-y-3 rounded-lg border border-carbon/15 bg-arena p-4">
+        <div className="space-y-3 rounded-2xl bg-celeste/35 p-4">
           <p className="text-sm text-carbon/70">Ese link no se puede mostrar embebido tal cual.</p>
           {bloqueo.sugerenciaEmbed ? (
             <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
@@ -165,19 +165,21 @@ export function WhitelistPanel({ codigo, whitelist, cargando }: WhitelistPanelPr
       )}
       {mensajeExito && <MensajeEstado tipo="exito">{mensajeExito}</MensajeEstado>}
 
+      </Tarjeta>
+
       {cargando ? (
         <MensajeEstado tipo="cargando">Cargando whitelist...</MensajeEstado>
       ) : whitelist.length === 0 ? (
-        <MensajeEstado tipo="vacio">Todavía no agregaste ninguna URL.</MensajeEstado>
+        <MensajeEstado tipo="vacio">Todavía no agregaste sitios. Los que agregues aparecen al instante en la pantalla de los alumnos.</MensajeEstado>
       ) : (
         <ul className="space-y-2">
           {whitelist.map((item) => (
             <li
               key={item.id}
-              className="flex items-center justify-between gap-3 rounded-lg border border-carbon/10 bg-arena px-4 py-3"
+              className={`${CLASE_FILA} flex items-center justify-between gap-3 bg-white p-3 pl-4 shadow-tarjeta`}
             >
               <div className="flex min-w-0 items-center gap-3">
-                <IconoModo modo={item.modo} className="size-4 shrink-0 text-carbon/50" />
+                <span className="grid size-10 shrink-0 place-items-center rounded-xl bg-papel"><IconoModo modo={item.modo} className="size-5 text-carbon/70" /></span>
                 <div className="min-w-0">
                   <div className="flex items-center gap-2">
                     <span className="truncate text-sm font-medium text-carbon">{hostnameDe(item.url)}</span>

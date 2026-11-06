@@ -3,11 +3,12 @@
 /*
  * Identidad visual del ENS — paleta fija de 5 colores (ver CLAUDE.md).
  * No agregar colores nuevos acá salvo una excepción justificada (ver
- * --color-error más abajo). Los "hover" son color-mix() de los mismos
- * 5 tonos, no colores inventados.
+ * --color-error más abajo). Los "hover" y las superficies son color-mix()
+ * de los mismos 5 tonos, no colores inventados.
  *
  * Contraste verificado (WCAG, luminancia relativa):
  *   - carbon sobre arena:      11.6:1 (AAA) — texto de cuerpo
+ *   - carbon sobre papel:      15:1   (AAA) — fondo de la app
  *   - carbon sobre violeta:     5.1:1 (AA)  — texto de botón
  *   - carbon sobre celeste:     9.0:1 (AAA) — texto de badge
  *   - arena sobre verde:       10.3:1 (AAA) — texto sobre superficie oscura
@@ -18,7 +19,8 @@
  *     grandes (fondo de botón/badge) con texto carbon encima, nunca
  *     como color de texto o borde suelto sobre arena. Los focus rings
  *     sobre arena usan carbon (es el único tono que da 3:1+ contra
- *     el resto de la paleta).
+ *     el resto de la paleta). Sobre verde, violeta sí da 4.6:1: por eso
+ *     es el acento de la navegación (sidebar / barra inferior).
  */
 @theme {
   --color-arena: #eae2b7;
@@ -29,6 +31,12 @@
 
   --color-violeta-hover: color-mix(in oklab, var(--color-violeta) 85%, var(--color-carbon) 15%);
   --color-verde-hover: color-mix(in oklab, var(--color-verde) 90%, var(--color-arena) 10%);
+
+  /*
+   * Superficies: arena aclarada, no un tono nuevo. "papel" es el fondo
+   * de la app; las tarjetas van en blanco encima para dar profundidad.
+   */
+  --color-papel: color-mix(in oklab, var(--color-arena) 32%, white);
 
   /*
    * Única excepción a la paleta: ninguno de los 5 colores sirve para
@@ -44,6 +52,9 @@
    * para que el badge se distinga del fondo arena; carbon encima: 6.2:1 (AA).
    */
   --color-alerta: #d99a1e;
+
+  --shadow-tarjeta: 0 1px 2px rgb(38 38 38 / 0.04), 0 8px 24px -12px rgb(20 52 43 / 0.12);
+  --shadow-flotante: 0 12px 40px -8px rgb(20 52 43 / 0.28);
 }
 
 /* inline: los valores de next/font se setean en runtime como CSS vars
@@ -51,10 +62,53 @@
 @theme inline {
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
+  --font-display: var(--font-bricolage);
+}
+
+html {
+  -webkit-tap-highlight-color: transparent;
 }
 
 body {
-  background: var(--color-arena);
+  background: var(--color-papel);
   color: var(--color-carbon);
   font-family: var(--font-sans), ui-sans-serif, system-ui, sans-serif;
+}
+
+/* Títulos: Bricolage en eje óptico grande y apretada; es la voz de la
+   marca, el cuerpo queda en Geist. */
+.font-display {
+  font-variation-settings: "opsz" 96;
+  letter-spacing: -0.025em;
+}
+
+/* Pizarrón: el verde de la paleta con el rayado tenue de un cuaderno.
+   Es la firma visual del ENS: sidebar, barra inferior, código de clase
+   y login. */
+.pizarron {
+  background-color: var(--color-verde);
+  background-image:
+    radial-gradient(120% 70% at 0% 0%, rgb(234 226 183 / 0.09), transparent 60%),
+    repeating-linear-gradient(0deg, rgb(234 226 183 / 0.04) 0 1px, transparent 1px 28px);
+}
+
+/* Punto "en vivo" de los estados de presencia. */
+@keyframes latido {
+  0% { box-shadow: 0 0 0 0 color-mix(in oklab, currentColor 60%, transparent); }
+  70%, 100% { box-shadow: 0 0 0 7px transparent; }
+}
+.latido {
+  animation: latido 1.8s ease-out infinite;
+}
+
+/* Entrada de cada sección al cambiar de pantalla. */
+@keyframes entrar {
+  from { opacity: 0; transform: translateY(8px); }
+}
+.entrar {
+  animation: entrar 260ms cubic-bezier(0.2, 0.7, 0.2, 1);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .latido, .entrar { animation: none; }
 }

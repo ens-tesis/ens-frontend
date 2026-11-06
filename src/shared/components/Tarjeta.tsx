@@ -8,18 +8,20 @@ interface TarjetaProps {
   className?: string;
 }
 
-// "normal": tinte sutil de carbon sobre el fondo arena (no un color
-// nuevo, solo opacidad del mismo token) para separar visualmente la
-// tarjeta sin salirse de la paleta.
-// "destacada": superficie oscura verde + texto arena, para lo que
-// necesita máximo protagonismo (código de sesión, headers).
+// "normal": superficie blanca elevada sobre el fondo papel.
+// "destacada": pizarrón verde + texto arena, para lo que necesita máximo
+// protagonismo (código de sesión).
 const CLASES: Record<VarianteTarjeta, string> = {
-  normal: "bg-carbon/5 border border-carbon/10",
-  destacada: "bg-verde text-arena",
+  normal: "bg-white border border-carbon/[0.07] shadow-tarjeta",
+  destacada: "pizarron text-arena shadow-flotante",
 };
 
 export function Tarjeta({ variante = "normal", children, className }: TarjetaProps) {
   return (
-    <div className={`rounded-xl p-6 ${CLASES[variante]} ${className ?? ""}`}>{children}</div>
+    <div className={`rounded-3xl p-5 sm:p-6 ${CLASES[variante]} ${className ?? ""}`}>{children}</div>
   );
 }
+
+// Fila dentro de una tarjeta (listas de sesiones, alumnos, URLs...).
+export const CLASE_FILA = "rounded-2xl border border-carbon/[0.07] bg-papel/70";
+export const CLASE_FILA_INTERACTIVA = `${CLASE_FILA} transition-colors hover:border-carbon/15 hover:bg-papel focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-carbon`;

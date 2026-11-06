@@ -13,12 +13,69 @@ import { MensajeEstado } from "@/shared/components/MensajeEstado";
 import { mensajeDeError } from "@/shared/lib/errores";
 
 
-function useUsuariosPorRol(rol: "alumno" | "preceptor") {
+// /admin/usuarios es solo de dirección: el preceptor no lo consulta.
+function useUsuariosPorRol(rol: "alumno" | "preceptor", enabled: boolean) {
   return useQuery({
     queryKey: ["usuarios", rol],
     queryFn: () =>
       api.get<{ usuarios: Usuario[] }>("/admin/usuarios", { params: { rol } }).then((r) => r.data.usuarios),
+    enabled,
   });
+}
+
+const FORM_ALUMNO_VACIO = { nombre: "", apellido: "", email: "", password: "" };
+
+// Alta de un alumno directo en el curso, con contraseña provisoria que el
+// alumno cambia en su primer ingreso. Si el email ya es de un alumno,
+// el backend solo lo matricula.
+function PrecargarAlumno({ cursoId }: { cursoId: number }) {
+  const queryClient = useQueryClient();
+  const [form, setForm] = useState(FORM_ALUMNO_VACIO);
+  const [aviso, setAviso] = useState<string | null>(null);
+
+  const precargar = useMutation({
+    mutationFn: () => api.post<{ creado: boolean }>(`/cursos/${cursoId}/alumnos/nuevo`, form),
+    onSuccess: (res) => {
+      setAviso(
+        res.data.creado
+          ? `Alumno creado. Pasale su email y la contraseña provisoria: la cambia al entrar.`
+          : `Ese email ya tenía cuenta de alumno: quedó matriculado con su contraseña de siempre.`,
+      );
+      setForm(FORM_ALUMNO_VACIO);
+      void queryClient.invalidateQueries({ queryKey: ["cursos"] });
+    },
+  });
+
+  return (
+    <form
+      className="space-y-3 rounded-2xl bg-papel/60 p-4 md:col-span-2"
+      onSubmit={(e) => {
+        e.preventDefault();
+        setAviso(null);
+        precargar.mutate();
+      }}
+    >
+      <h4 className="text-sm font-semibold text-carbon">Precargar alumno</h4>
+      <div className="grid gap-3 sm:grid-cols-2">
+        <Campo id={`alumno-nombre-${cursoId}`} label="Nombre" required value={form.nombre}
+          onChange={(e) => setForm({ ...form, nombre: e.target.value })} />
+        <Campo id={`alumno-apellido-${cursoId}`} label="Apellido" value={form.apellido}
+          onChange={(e) => setForm({ ...form, apellido: e.target.value })} />
+        <Campo id={`alumno-email-${cursoId}`} label="Email" type="email" required autoComplete="off"
+          value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} />
+        <Campo id={`alumno-password-${cursoId}`} label="Contraseña provisoria (mín. 8)" type="text"
+          required minLength={8} autoComplete="off" value={form.password}
+          onChange={(e) => setForm({ ...form, password: e.target.value })} />
+      </div>
+      {precargar.isError && (
+        <MensajeEstado tipo="error">{mensajeDeError(precargar.error, "No se pudo cargar el alumno.")}</MensajeEstado>
+      )}
+      {aviso && <MensajeEstado tipo="exito">{aviso}</MensajeEstado>}
+      <Boton type="submit" cargando={precargar.isPending}>
+        Agregar alumno
+      </Boton>
+    </form>
+  );
 }
 
 function nombreDe(u: { nombre: string; apellido?: string }) {
@@ -36,13 +93,16 @@ function Asignaciones({
 }: {
   titulo: string;
   asignados: PersonaResumen[];
-  disponibles: Usuario[];
+  // Sin lista (preceptor) no se muestra el "agregar existente".
+  disponibles: Usuario[] | null;
   onAgregar: (id: number) => void;
   onQuitar: (id: number) => void;
   error: string | null;
 }) {
   const [elegido, setElegido] = useState("");
-  const libres = disponibles.filter((u) => u.activo !== false && !asignados.some((a) => a.id === u.id));
+  const libres = (disponibles ?? []).filter(
+    (u) => u.activo !== false && !asignados.some((a) => a.id === u.id),
+  );
   return (
     <div className="space-y-3">
       <h4 className="flex items-center gap-2 text-sm font-semibold text-carbon">
@@ -69,7 +129,7 @@ function Asignaciones({
           ))}
         </ul>
       )}
-      <form
+      {disponibles && <form
         className="flex gap-2"
         onSubmit={(e) => {
           e.preventDefault();
@@ -94,16 +154,16 @@ function Asignaciones({
         <Boton type="submit" disabled={!elegido}>
           Agregar
         </Boton>
-      </form>
+      </form>}
       {error && <MensajeEstado tipo="error">{error}</MensajeEstado>}
     </div>
   );
 }
 
-function DetalleCurso({ curso }: { curso: Curso }) {
+function DetalleCurso({ curso, esPreceptor }: { curso: Curso; esPreceptor: boolean }) {
   const queryClient = useQueryClient();
-  const preceptores = useUsuariosPorRol("preceptor");
-  const alumnosDisponibles = useUsuariosPorRol("alumno");
+  const preceptores = useUsuariosPorRol("preceptor", !esPreceptor);
+  const alumnosDisponibles = useUsuariosPorRol("alumno", !esPreceptor);
   const alumnos = useQuery({
     queryKey: ["cursos", curso.id, "alumnos"],
     queryFn: () =>
@@ -121,27 +181,32 @@ function DetalleCurso({ curso }: { curso: Curso }) {
 
   return (
     <div className="grid gap-6 border-t border-carbon/[0.07] p-4 sm:p-5 md:grid-cols-2">
-      <Asignaciones
-        titulo="Preceptores"
-        asignados={curso.preceptores}
-        disponibles={preceptores.data ?? []}
-        onAgregar={(id) => cambio.mutate({ metodo: "post", recurso: "preceptores", id })}
-        onQuitar={(id) => cambio.mutate({ metodo: "delete", recurso: "preceptores", id })}
-        error={cambio.variables?.recurso === "preceptores" ? error : null}
-      />
+      {!esPreceptor && (
+        <Asignaciones
+          titulo="Preceptores"
+          asignados={curso.preceptores}
+          disponibles={preceptores.data ?? []}
+          onAgregar={(id) => cambio.mutate({ metodo: "post", recurso: "preceptores", id })}
+          onQuitar={(id) => cambio.mutate({ metodo: "delete", recurso: "preceptores", id })}
+          error={cambio.variables?.recurso === "preceptores" ? error : null}
+        />
+      )}
       <Asignaciones
         titulo="Alumnos"
         asignados={alumnos.data ?? []}
-        disponibles={alumnosDisponibles.data ?? []}
+        disponibles={esPreceptor ? null : (alumnosDisponibles.data ?? [])}
         onAgregar={(id) => cambio.mutate({ metodo: "post", recurso: "alumnos", id })}
         onQuitar={(id) => cambio.mutate({ metodo: "delete", recurso: "alumnos", id })}
         error={cambio.variables?.recurso === "alumnos" ? error : null}
       />
+      <PrecargarAlumno cursoId={curso.id} />
     </div>
   );
 }
 
-export function GestionCursos() {
+// esPreceptor: solo ve sus cursos (el backend filtra), no asigna
+// preceptores y queda asignado a los cursos que crea.
+export function GestionCursos({ esPreceptor = false }: { esPreceptor?: boolean }) {
   const queryClient = useQueryClient();
   const cursos = useCursos();
   const [abierto, setAbierto] = useState<number | null>(null);
@@ -223,7 +288,7 @@ export function GestionCursos() {
                   className={`size-5 shrink-0 text-carbon/40 transition-transform ${abierto === c.id ? "rotate-90" : ""}`}
                 />
               </button>
-              {abierto === c.id && <DetalleCurso curso={c} />}
+              {abierto === c.id && <DetalleCurso curso={c} esPreceptor={esPreceptor} />}
             </div>
           ))
         )}

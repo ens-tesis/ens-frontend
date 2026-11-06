@@ -12,6 +12,7 @@ const PUNTO: Record<TipoNotificacion, string> = {
   sin_red: "bg-alerta",
   desconectado: "bg-error",
   distracciones_reiteradas: "bg-violeta",
+  no_se_unio: "bg-error",
 };
 
 const horaCorta = (iso: string) =>

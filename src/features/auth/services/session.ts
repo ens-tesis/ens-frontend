@@ -11,5 +11,7 @@ export interface Usuario {
   rol: Rol;
   apellido?: string;
   activo?: boolean;
+  // Alumno precargado que todavía no cambió su contraseña inicial.
+  debeCambiarPassword?: boolean;
   createdAt: string;
 }

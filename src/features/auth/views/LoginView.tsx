@@ -10,7 +10,7 @@ import { Campo } from "@/shared/components/Campo";
 import { MensajeEstado } from "@/shared/components/MensajeEstado";
 import { PantallaAuth } from "./PantallaAuth";
 import { api } from "@/shared/api/client";
-import { rutaPorRol } from "../services/rutaPorRol";
+import { rutaInicial } from "../services/rutaPorRol";
 import { clearToken, setToken, type Usuario } from "../services/session";
 import { useTokenInicial } from "../services/useTokenInicial";
 
@@ -51,7 +51,7 @@ export default function LoginView() {
 
   useEffect(() => {
     if (sesionExistente.data) {
-      router.replace(rutaPorRol(sesionExistente.data.usuario.rol));
+      router.replace(rutaInicial(sesionExistente.data.usuario));
     } else if (sesionExistente.isError) {
       clearToken();
     }
@@ -61,7 +61,7 @@ export default function LoginView() {
     mutationFn: (input: LoginInput) => api.post<LoginResponse>("/auth/login", input),
     onSuccess: (res) => {
       setToken(res.data.token);
-      router.push(rutaPorRol(res.data.usuario.rol));
+      router.push(rutaInicial(res.data.usuario));
     },
   });
 

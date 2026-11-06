@@ -1,7 +1,7 @@
 "use client";
 
 import { useQuery, type UseQueryResult } from "@tanstack/react-query";
-import { useRouter } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { useEffect } from "react";
 import { api } from "@/shared/api/client";
 import { clearToken, getToken, type Usuario } from "../services/session";
@@ -17,6 +17,7 @@ interface MeResponse {
  */
 export function useUsuarioActual(): UseQueryResult<MeResponse> {
   const router = useRouter();
+  const pathname = usePathname();
 
   const query = useQuery({
     queryKey: ["me"],
@@ -33,8 +34,13 @@ export function useUsuarioActual(): UseQueryResult<MeResponse> {
     if (query.isError) {
       clearToken();
       router.replace("/login");
+      return;
     }
-  }, [query.isError, router]);
+    // Contraseña provisoria: el backend rechaza todo lo demás hasta cambiarla.
+    if (query.data?.usuario.debeCambiarPassword && pathname !== "/cambiar-password") {
+      router.replace("/cambiar-password");
+    }
+  }, [query.isError, query.data, pathname, router]);
 
   return query;
 }

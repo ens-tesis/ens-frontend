@@ -3,6 +3,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { useState } from "react";
 import { useGuardRol } from "@/features/auth";
+import { GestionCursos } from "@/features/director";
 import { NotificacionesCampana } from "@/features/notificaciones";
 import { Historial, HistorialAlumno, useCursos, type Curso, type PersonaResumen } from "@/features/reportes";
 import { api } from "@/shared/api/client";
@@ -11,7 +12,7 @@ import { Icono } from "@/shared/components/Icono";
 import { MensajeEstado } from "@/shared/components/MensajeEstado";
 import { CLASE_FILA, Tarjeta } from "@/shared/components/Tarjeta";
 
-type Seccion = "historial" | "cursos" | "alta";
+type Seccion = "historial" | "cursos" | "gestion" | "alta";
 
 const SECCIONES: (ItemNav<Seccion> & { descripcion: string })[] = [
   {
@@ -25,6 +26,12 @@ const SECCIONES: (ItemNav<Seccion> & { descripcion: string })[] = [
     etiqueta: "Mis cursos",
     icono: "cursos",
     descripcion: "Elegí un alumno para ver su asistencia digital en todas las clases.",
+  },
+  {
+    id: "gestion",
+    etiqueta: "Gestionar cursos",
+    icono: "alumnos",
+    descripcion: "Creá cursos y precargá a sus alumnos con una contraseña provisoria.",
   },
   { id: "alta", etiqueta: "Alta docente", icono: "alta", href: "/admin", descripcion: "" },
 ];
@@ -93,14 +100,16 @@ export default function PreceptorView() {
       descripcion={actual.descripcion}
       acciones={<NotificacionesCampana />}
     >
-      {cursos.isPending ? (
+      {seccion === "gestion" ? (
+        <GestionCursos esPreceptor />
+      ) : cursos.isPending ? (
         <MensajeEstado tipo="cargando">Cargando cursos...</MensajeEstado>
       ) : cursos.isError ? (
         <MensajeEstado tipo="error">No se pudieron cargar tus cursos.</MensajeEstado>
       ) : cursos.data.length === 0 ? (
         <Tarjeta>
           <MensajeEstado tipo="vacio">
-            Todavía no tenés cursos asignados. Pedile a la dirección que te asigne.
+            Todavía no tenés cursos. Creá uno en &quot;Gestionar cursos&quot; o pedile a la dirección que te asigne.
           </MensajeEstado>
         </Tarjeta>
       ) : seccion === "historial" ? (

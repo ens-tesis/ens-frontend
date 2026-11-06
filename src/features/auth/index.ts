@@ -6,4 +6,5 @@ export { useGuardRol } from "./queries/useGuardRol";
 export { default as LoginView } from "./views/LoginView";
 export { default as RegistroView } from "./views/RegistroView";
 export { default as AdminUsuariosView } from "./views/AdminUsuariosView";
+export { default as CambiarPasswordView } from "./views/CambiarPasswordView";
 export { esRolInferior, puedeCrearUsuarios } from "./services/rolJerarquia";

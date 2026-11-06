@@ -14,10 +14,11 @@ export function useGuardRol(roles: Rol[]): { cargando: boolean; usuario: Usuario
   const router = useRouter();
   const query = useUsuarioActual();
   const usuario = query.data?.usuario ?? null;
-  const permitido = usuario !== null && roles.includes(usuario.rol);
+  const permitido = usuario !== null && roles.includes(usuario.rol) && !usuario.debeCambiarPassword;
 
+  // debeCambiarPassword ya lo redirige useUsuarioActual.
   useEffect(() => {
-    if (usuario && !permitido) router.replace("/login");
+    if (usuario && !usuario.debeCambiarPassword && !permitido) router.replace("/login");
   }, [usuario, permitido, router]);
 
   return { cargando: query.isPending, usuario: permitido ? usuario : null };

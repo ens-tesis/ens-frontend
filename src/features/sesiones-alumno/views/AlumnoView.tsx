@@ -19,14 +19,15 @@ import { VisorEmbebido } from "../components/VisorEmbebido";
 // Ver la misma nota en sesiones-docente/views/DocenteView.tsx sobre sessionStorage.
 const CLAVE_SESION_ACTIVA = "ens_sesion_conectada_codigo";
 
-export default function AlumnoView() {
+export default function AlumnoView({ codigoQr }: { codigoQr: string | null }) {
   const router = useRouter();
   const usuarioQuery = useUsuarioActual();
   const codigoGuardado = useSessionStorageInicial(CLAVE_SESION_ACTIVA);
   // undefined = "todavía no se tocó, usar lo guardado"; string | null =
   // override explícito (conectar / volver), pisa lo que diga el storage.
+  // El código del QR pisa lo guardado: es la clase que el alumno acaba de escanear.
   const [codigoOverride, setCodigoOverride] = useState<string | null | undefined>(undefined);
-  const codigoConectado = codigoOverride !== undefined ? codigoOverride : codigoGuardado;
+  const codigoConectado = codigoOverride !== undefined ? codigoOverride : (codigoQr ?? codigoGuardado);
   const [inputCodigo, setInputCodigo] = useState("");
 
   useEffect(() => {
@@ -34,6 +35,16 @@ export default function AlumnoView() {
       router.replace("/login");
     }
   }, [usuarioQuery.data, router]);
+
+  // Se guarda el código del QR para que sobreviva al login (sin sesión,
+  // useUsuarioActual manda a /login y de ahí se vuelve a /alumno sin el
+  // parámetro). Con sesión, se limpia la URL para que un refresh no
+  // vuelva a forzar este código después de salir de la clase.
+  useEffect(() => {
+    if (!codigoQr) return;
+    window.sessionStorage.setItem(CLAVE_SESION_ACTIVA, codigoQr);
+    if (getToken()) router.replace("/alumno");
+  }, [codigoQr, router]);
 
   const token = getToken();
   const socket = useSesionSocket(codigoConectado, token);

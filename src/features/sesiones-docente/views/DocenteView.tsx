@@ -172,6 +172,7 @@ export default function DocenteView() {
         <div className="space-y-4">
           <CodigoSesion
             codigo={codigoActivo}
+            curso={cursos.data?.find((c) => c.id === sesionQuery.data?.sesion.cursoId)?.nombre ?? null}
             enVivo={socket.estado === "conectado"}
             estado={
               socket.estado === "conectado"

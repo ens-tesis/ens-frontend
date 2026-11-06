@@ -1,4 +1,5 @@
 import type { ReactNode } from "react";
+import { BotonInstalar } from "@/shared/pwa/BotonInstalar";
 
 // Muestra de cómo se ve una clase en el ENS: lo que hace el producto,
 // dicho con sus propios estados en vez de con un slogan.
@@ -55,6 +56,7 @@ export function PantallaAuth({ titulo, children }: { titulo: string; children: R
         <div className="entrar w-full max-w-sm space-y-6">
           <h1 className="font-display text-3xl font-bold text-carbon">{titulo}</h1>
           {children}
+          <BotonInstalar className="mx-auto" />
         </div>
       </main>
     </div>

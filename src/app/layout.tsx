@@ -23,6 +23,7 @@ export const metadata: Metadata = {
   title: "ENS — Entorno de Navegación Supervisado",
   description: "Supervisión de navegación web en clase para el piloto del Colegio Santa María",
   appleWebApp: { capable: true, title: "ENS", statusBarStyle: "black-translucent" },
+  icons: { apple: "/apple-touch-icon.png" },
 };
 
 // viewportFit cover + env(safe-area-inset-*) en la barra inferior: la PWA

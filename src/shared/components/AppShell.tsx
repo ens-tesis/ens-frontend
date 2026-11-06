@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState, type ReactNode } from "react";
 import { clearToken } from "../auth/token";
+import { BotonInstalar } from "../pwa/BotonInstalar";
 import { Icono, type NombreIcono } from "./Icono";
 
 export interface ItemNav<T extends string> {
@@ -178,6 +179,7 @@ function MenuCuenta({ usuario, onSalir }: { usuario: AppShellProps<string>["usua
               </p>
               <p className="truncate text-xs text-carbon/60">{usuario.email}</p>
             </div>
+            <BotonInstalar className="w-full" />
             <button
               type="button"
               onClick={onSalir}
@@ -236,7 +238,9 @@ export function AppShell<T extends string>({
           </nav>
         )}
 
-        <div className="mt-auto flex items-center gap-3 rounded-2xl bg-arena/[0.07] p-3">
+        <div className="mt-auto space-y-2">
+        <BotonInstalar sobreVerde className="w-full" />
+        <div className="flex items-center gap-3 rounded-2xl bg-arena/[0.07] p-3">
           <span className="grid size-10 shrink-0 place-items-center rounded-full bg-celeste text-sm font-bold text-carbon">
             {iniciales(usuario)}
           </span>
@@ -255,6 +259,7 @@ export function AppShell<T extends string>({
           >
             <Icono nombre="salir" />
           </button>
+        </div>
         </div>
       </aside>
 

@@ -17,6 +17,7 @@ const PATHS = {
   copiar: "M9 9h11v11H9zM5 15H4V4h11v1",
   descargar: "M12 3v12M7 10l5 5 5-5M4 21h16",
   mas: "M12 5v14M5 12h14",
+  qr: "M4 4h6v6H4zM14 4h6v6h-6zM4 14h6v6H4zM14 14h2v2h-2zM18 14h2M14 18h2M18 18h2v2h-2z",
 } as const;
 
 export type NombreIcono = keyof typeof PATHS;

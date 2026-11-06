@@ -109,12 +109,6 @@ export function useNotificaciones() {
   });
 
   useEffect(() => {
-    if ("serviceWorker" in navigator) {
-      void navigator.serviceWorker.register("/sw.js", { scope: "/", updateViaCache: "none" });
-    }
-  }, []);
-
-  useEffect(() => {
     if (!token) return;
     return conectarCanal(token, (n) => {
       queryClient.setQueryData<Notificacion[]>(CLAVE, (prev) => [n, ...(prev ?? [])].slice(0, 50));

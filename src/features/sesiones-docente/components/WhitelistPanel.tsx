@@ -109,7 +109,7 @@ export function WhitelistPanel({ codigo, whitelist, cargando }: WhitelistPanelPr
             id="nueva-url"
             label="Agregar URL"
             type="text"
-            placeholder="https://ejemplo.com"
+            placeholder="ejemplo.com"
             value={url}
             onChange={(e) => setUrl(e.target.value)}
           />

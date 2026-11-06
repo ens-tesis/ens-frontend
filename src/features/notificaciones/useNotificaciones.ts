@@ -22,7 +22,7 @@ export interface Notificacion {
   createdAt: string;
 }
 
-const TITULO: Record<TipoNotificacion, string> = {
+export const TITULO_NOTIFICACION: Record<TipoNotificacion, string> = {
   ausente_digital: "Ausente digital",
   sin_red: "Alumno sin red",
   desconectado: "Alumno desconectado",
@@ -44,7 +44,7 @@ function leerPermiso(): Permiso {
 function mostrarNotificacionSistema(n: Notificacion): void {
   if (leerPermiso() !== "granted" || !("serviceWorker" in navigator)) return;
   void navigator.serviceWorker.ready.then((reg) =>
-    reg.showNotification(TITULO[n.tipo], {
+    reg.showNotification(TITULO_NOTIFICACION[n.tipo], {
       body: n.mensaje,
       icon: "/icon.svg",
       tag: `ens-${n.id}`,

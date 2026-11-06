@@ -6,12 +6,12 @@ import type { Usuario } from "@/features/auth";
 import { useCursos, type Curso, type PersonaResumen } from "@/features/reportes";
 import { api } from "@/shared/api/client";
 import { Boton } from "@/shared/components/Boton";
-import { Campo } from "@/shared/components/Campo";
+import { CLASE_CONTROL, Campo } from "@/shared/components/Campo";
+import { Icono } from "@/shared/components/Icono";
+import { CLASE_FILA, Tarjeta } from "@/shared/components/Tarjeta";
 import { MensajeEstado } from "@/shared/components/MensajeEstado";
 import { mensajeDeError } from "@/shared/lib/errores";
 
-const CLASE_SELECT =
-  "min-h-11 w-full rounded-lg border border-carbon/20 bg-arena px-3.5 py-2.5 text-base text-carbon";
 
 function useUsuariosPorRol(rol: "alumno" | "preceptor") {
   return useQuery({
@@ -44,21 +44,26 @@ function Asignaciones({
   const [elegido, setElegido] = useState("");
   const libres = disponibles.filter((u) => u.activo !== false && !asignados.some((a) => a.id === u.id));
   return (
-    <div className="space-y-2">
-      <h4 className="text-sm font-semibold text-carbon">
-        {titulo} ({asignados.length})
+    <div className="space-y-3">
+      <h4 className="flex items-center gap-2 text-sm font-semibold text-carbon">
+        {titulo}
+        <span className="rounded-full bg-carbon/[0.06] px-2 text-xs leading-5 tabular-nums">{asignados.length}</span>
       </h4>
       {asignados.length > 0 && (
-        <ul className="space-y-1">
+        <ul className="flex flex-wrap gap-2">
           {asignados.map((a) => (
-            <li key={a.id} className="flex items-center justify-between gap-2 text-sm text-carbon">
+            <li
+              key={a.id}
+              className="flex items-center gap-1 rounded-full border border-carbon/10 bg-white py-1 pr-1 pl-3 text-sm text-carbon"
+            >
               <span>{nombreDe(a)}</span>
               <button
                 type="button"
+                aria-label={`Quitar a ${nombreDe(a)}`}
                 onClick={() => onQuitar(a.id)}
-                className="min-h-9 px-2 text-xs font-medium text-error underline underline-offset-2"
+                className="grid size-7 place-items-center rounded-full text-carbon/50 hover:bg-error/10 hover:text-error focus-visible:outline focus-visible:outline-2 focus-visible:outline-carbon"
               >
-                Quitar
+                <Icono nombre="mas" className="size-4 rotate-45" />
               </button>
             </li>
           ))}
@@ -77,7 +82,7 @@ function Asignaciones({
           aria-label={`Agregar a ${titulo.toLowerCase()}`}
           value={elegido}
           onChange={(e) => setElegido(e.target.value)}
-          className={CLASE_SELECT}
+          className={CLASE_CONTROL}
         >
           <option value="">Elegir...</option>
           {libres.map((u) => (
@@ -115,7 +120,7 @@ function DetalleCurso({ curso }: { curso: Curso }) {
   const error = cambio.isError ? mensajeDeError(cambio.error, "No se pudo guardar el cambio.") : null;
 
   return (
-    <div className="space-y-5 border-t border-carbon/10 px-4 py-4">
+    <div className="grid gap-6 border-t border-carbon/[0.07] p-4 sm:p-5 md:grid-cols-2">
       <Asignaciones
         titulo="Preceptores"
         asignados={curso.preceptores}
@@ -156,15 +161,15 @@ export function GestionCursos() {
   });
 
   return (
-    <div className="space-y-6">
+    <div className="grid items-start gap-6 lg:grid-cols-[1fr_20rem]">
       <form
-        className="space-y-3"
+        className="order-first space-y-4 rounded-3xl border border-carbon/[0.07] bg-white p-5 shadow-tarjeta sm:p-6 lg:sticky lg:top-24 lg:order-last"
         onSubmit={(e) => {
           e.preventDefault();
           crear.mutate();
         }}
       >
-        <h2 className="text-lg font-semibold text-carbon">Nuevo curso</h2>
+        <h2 className="font-display text-xl font-bold text-carbon">Nuevo curso</h2>
         <Campo id="curso-nombre" label="Nombre (ej. 5to A)" value={form.nombre} required maxLength={100}
           onChange={(e) => setForm({ ...form, nombre: e.target.value })} />
         <div className="grid grid-cols-2 gap-3">
@@ -179,30 +184,44 @@ export function GestionCursos() {
         </Boton>
       </form>
 
-      <div className="space-y-3">
-        <h2 className="text-lg font-semibold text-carbon">Cursos</h2>
+      <div className="space-y-2">
         {cursos.isPending ? (
           <MensajeEstado tipo="cargando">Cargando cursos...</MensajeEstado>
         ) : cursos.isError ? (
           <MensajeEstado tipo="error">No se pudieron cargar los cursos.</MensajeEstado>
         ) : cursos.data.length === 0 ? (
-          <MensajeEstado tipo="vacio">Todavía no hay cursos.</MensajeEstado>
+          <Tarjeta>
+            <MensajeEstado tipo="vacio">Todavía no hay cursos. Creá el primero con el formulario.</MensajeEstado>
+          </Tarjeta>
         ) : (
           cursos.data.map((c) => (
-            <div key={c.id} className="rounded-lg border border-carbon/10 bg-arena">
+            <div key={c.id} className={`${CLASE_FILA} overflow-hidden bg-white shadow-tarjeta`}>
               <button
                 type="button"
                 aria-expanded={abierto === c.id}
                 onClick={() => setAbierto(abierto === c.id ? null : c.id)}
-                className="flex min-h-11 w-full flex-wrap items-center justify-between gap-2 px-4 py-3 text-left"
+                className="flex min-h-16 w-full items-center gap-4 px-4 py-3 text-left hover:bg-papel/50 focus-visible:outline focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-carbon"
               >
-                <span className="font-medium text-carbon">
-                  {c.nombre} · {c.anioLectivo}
-                  {c.turno ? ` · ${c.turno}` : ""}
+                <span className="grid size-11 shrink-0 place-items-center rounded-2xl bg-celeste font-display text-sm font-bold text-carbon">
+                  {c.nombre.slice(0, 3)}
                 </span>
-                <span className="text-sm text-carbon/70">
-                  {c.cantidadAlumnos} alumnos · {c.preceptores.length} preceptores
+                <span className="min-w-0 flex-1">
+                  <span className="block truncate font-semibold text-carbon">
+                    {c.nombre}
+                    <span className="font-normal text-carbon/55">
+                      {" "}
+                      · {c.anioLectivo}
+                      {c.turno ? ` · ${c.turno}` : ""}
+                    </span>
+                  </span>
+                  <span className="block text-xs text-carbon/60">
+                    {c.cantidadAlumnos} alumnos · {c.preceptores.length} preceptores
+                  </span>
                 </span>
+                <Icono
+                  nombre="flecha"
+                  className={`size-5 shrink-0 text-carbon/40 transition-transform ${abierto === c.id ? "rotate-90" : ""}`}
+                />
               </button>
               {abierto === c.id && <DetalleCurso curso={c} />}
             </div>

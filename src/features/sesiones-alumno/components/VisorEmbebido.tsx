@@ -59,7 +59,7 @@ export function VisorEmbebido({ item, src, onVolver }: VisorEmbebidoProps) {
 
   return (
     <div className="flex min-h-0 flex-1 flex-col gap-2">
-      <div className="flex items-center justify-between gap-3 rounded-lg border border-carbon/10 bg-arena px-3 py-2">
+      <div className="flex items-center justify-between gap-3 rounded-2xl border border-carbon/[0.07] bg-white py-1.5 pr-1.5 pl-3 shadow-tarjeta">
         <div className="flex min-w-0 items-center gap-2">
           <IconoModo modo={item.modo} className="size-4 shrink-0 text-carbon/50" />
           <span className="truncate text-sm font-medium text-carbon">{hostnameDe(item.url)}</span>
@@ -72,7 +72,7 @@ export function VisorEmbebido({ item, src, onVolver }: VisorEmbebidoProps) {
       </div>
 
       {bloqueado ? (
-        <div className="flex flex-1 flex-col items-center justify-center gap-4 rounded-lg border border-carbon/10 bg-arena p-6 text-center">
+        <div className="flex flex-1 flex-col items-center justify-center gap-4 rounded-3xl border border-carbon/[0.07] bg-white p-6 text-center">
           <MensajeEstado tipo="error">
             {item.modo === "mirror"
               ? "No se pudo cargar la versión de lectura. Probá de nuevo en un momento."
@@ -85,7 +85,7 @@ export function VisorEmbebido({ item, src, onVolver }: VisorEmbebidoProps) {
       ) : (
         <div className="relative min-h-0 flex-1">
           {!cargada && (
-            <div className="absolute inset-0 z-10 flex items-center justify-center rounded-lg border border-carbon/10 bg-arena">
+            <div className="absolute inset-0 z-10 flex items-center justify-center rounded-2xl border border-carbon/[0.07] bg-white">
               <MensajeEstado tipo="cargando">Cargando...</MensajeEstado>
             </div>
           )}
@@ -94,7 +94,7 @@ export function VisorEmbebido({ item, src, onVolver }: VisorEmbebidoProps) {
             src={src}
             onLoad={manejarCarga}
             title={hostnameDe(item.url)}
-            className="h-full min-h-[75vh] w-full rounded-lg border border-carbon/10 bg-white"
+            className="h-full min-h-[75vh] w-full rounded-2xl border border-carbon/[0.07] bg-white"
             // Antes sin sandbox (capacidades totales). Hoy hay tres modos,
             // cada uno con su propio nivel de confianza y su propio sandbox:
             //

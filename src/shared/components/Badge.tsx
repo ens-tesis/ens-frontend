@@ -4,6 +4,8 @@ type VarianteBadge = "celeste" | "verde" | "rojo" | "amarillo";
 
 interface BadgeProps {
   variante?: VarianteBadge;
+  // Punto de estado a la izquierda; "vivo" le agrega el latido.
+  punto?: boolean | "vivo";
   children: ReactNode;
 }
 
@@ -16,11 +18,17 @@ const CLASES: Record<VarianteBadge, string> = {
   amarillo: "bg-alerta text-carbon",
 };
 
-export function Badge({ variante = "celeste", children }: BadgeProps) {
+export function Badge({ variante = "celeste", punto = false, children }: BadgeProps) {
   return (
     <span
-      className={`inline-flex items-center rounded-full px-2.5 py-1 text-xs font-medium ${CLASES[variante]}`}
+      className={`inline-flex shrink-0 items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-semibold whitespace-nowrap ${CLASES[variante]}`}
     >
+      {punto && (
+        <span
+          aria-hidden="true"
+          className={`size-1.5 rounded-full bg-current ${punto === "vivo" ? "latido" : ""}`}
+        />
+      )}
       {children}
     </span>
   );

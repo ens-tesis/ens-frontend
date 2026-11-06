@@ -1,18 +1,33 @@
 "use client";
 
 import { useQuery } from "@tanstack/react-query";
-import Link from "next/link";
 import { useState } from "react";
 import { useGuardRol } from "@/features/auth";
 import { NotificacionesCampana } from "@/features/notificaciones";
 import { Historial, HistorialAlumno, useCursos, type Curso, type PersonaResumen } from "@/features/reportes";
 import { api } from "@/shared/api/client";
-import { Encabezado } from "@/shared/components/Encabezado";
+import { AppShell, PantallaCargando, type ItemNav } from "@/shared/components/AppShell";
+import { Icono } from "@/shared/components/Icono";
 import { MensajeEstado } from "@/shared/components/MensajeEstado";
-import { Pestanas } from "@/shared/components/Pestanas";
-import { Tarjeta } from "@/shared/components/Tarjeta";
+import { CLASE_FILA, Tarjeta } from "@/shared/components/Tarjeta";
 
-type Pestana = "historial" | "cursos";
+type Seccion = "historial" | "cursos" | "alta";
+
+const SECCIONES: (ItemNav<Seccion> & { descripcion: string })[] = [
+  {
+    id: "historial",
+    etiqueta: "Historial",
+    icono: "historial",
+    descripcion: "Las clases de tus cursos: quién estuvo, quién se distrajo y quién perdió la conexión.",
+  },
+  {
+    id: "cursos",
+    etiqueta: "Mis cursos",
+    icono: "cursos",
+    descripcion: "Elegí un alumno para ver su asistencia digital en todas las clases.",
+  },
+  { id: "alta", etiqueta: "Alta docente", icono: "alta", href: "/admin", descripcion: "" },
+];
 
 function AlumnosDelCurso({
   curso,
@@ -30,18 +45,21 @@ function AlumnosDelCurso({
   if (alumnos.isError) return <MensajeEstado tipo="error">No se pudieron cargar los alumnos.</MensajeEstado>;
   if (alumnos.data.length === 0) return <MensajeEstado tipo="vacio">Sin alumnos matriculados.</MensajeEstado>;
   return (
-    <ul className="divide-y divide-carbon/10">
+    <ul className="grid gap-1 sm:grid-cols-2">
       {alumnos.data.map((a) => (
         <li key={a.id}>
           <button
             type="button"
             onClick={() => onAlumno(a)}
-            className="flex min-h-11 w-full items-center justify-between gap-2 px-1 text-left text-sm text-carbon hover:bg-carbon/5"
+            className="flex min-h-12 w-full items-center gap-3 rounded-xl px-2 text-left text-sm text-carbon hover:bg-papel focus-visible:outline focus-visible:outline-2 focus-visible:outline-carbon"
           >
-            <span>
+            <span className="grid size-8 shrink-0 place-items-center rounded-full bg-arena text-xs font-bold">
+              {`${a.nombre[0] ?? ""}${a.apellido[0] ?? ""}`.toUpperCase()}
+            </span>
+            <span className="flex-1 truncate">
               {a.apellido}, {a.nombre}
             </span>
-            <span className="text-xs text-carbon/60">Ver asistencia digital →</span>
+            <Icono nombre="flecha" className="size-4 text-carbon/40" />
           </button>
         </li>
       ))}
@@ -52,89 +70,85 @@ function AlumnosDelCurso({
 export default function PreceptorView() {
   const { cargando, usuario } = useGuardRol(["preceptor"]);
   const cursos = useCursos(Boolean(usuario));
-  const [pestana, setPestana] = useState<Pestana>("historial");
+  const [seccion, setSeccion] = useState<Seccion>("historial");
   const [cursoAbierto, setCursoAbierto] = useState<number | null>(null);
   const [alumno, setAlumno] = useState<PersonaResumen | null>(null);
 
-  if (cargando) {
-    return (
-      <div className="flex flex-1 items-center justify-center px-4">
-        <MensajeEstado tipo="cargando">Cargando...</MensajeEstado>
-      </div>
-    );
-  }
+  if (cargando) return <PantallaCargando />;
   if (!usuario) return null;
 
+  const actual = SECCIONES.find((s) => s.id === seccion)!;
+
   return (
-    <div className="mx-auto flex w-full max-w-3xl flex-1 flex-col gap-6 px-4 py-8">
-      <Encabezado
-        titulo="ENS · Preceptor"
-        subtitulo={`${usuario.nombre} · ${usuario.email}`}
-        acciones={<NotificacionesCampana />}
-      />
-
-      <Pestanas
-        opciones={[
-          { id: "historial", etiqueta: "Historial de sesiones" },
-          { id: "cursos", etiqueta: "Mis cursos" },
-        ]}
-        activa={pestana}
-        onCambiar={(p) => {
-          setPestana(p);
-          setAlumno(null);
-        }}
-      />
-
-      <Tarjeta>
-        {cursos.isPending ? (
-          <MensajeEstado tipo="cargando">Cargando cursos...</MensajeEstado>
-        ) : cursos.isError ? (
-          <MensajeEstado tipo="error">No se pudieron cargar tus cursos.</MensajeEstado>
-        ) : cursos.data.length === 0 ? (
+    <AppShell
+      area="Preceptoría"
+      usuario={usuario}
+      secciones={SECCIONES}
+      activa={seccion}
+      onCambiar={(s) => {
+        setSeccion(s);
+        setAlumno(null);
+      }}
+      titulo={actual.etiqueta}
+      descripcion={actual.descripcion}
+      acciones={<NotificacionesCampana />}
+    >
+      {cursos.isPending ? (
+        <MensajeEstado tipo="cargando">Cargando cursos...</MensajeEstado>
+      ) : cursos.isError ? (
+        <MensajeEstado tipo="error">No se pudieron cargar tus cursos.</MensajeEstado>
+      ) : cursos.data.length === 0 ? (
+        <Tarjeta>
           <MensajeEstado tipo="vacio">
             Todavía no tenés cursos asignados. Pedile a la dirección que te asigne.
           </MensajeEstado>
-        ) : pestana === "historial" ? (
-          <Historial cursos={cursos.data} />
-        ) : alumno ? (
-          <HistorialAlumno
-            alumnoId={alumno.id}
-            nombre={`${alumno.nombre} ${alumno.apellido}`}
-            onVolver={() => setAlumno(null)}
-          />
-        ) : (
-          <div className="space-y-3">
-            <h2 className="text-lg font-semibold text-carbon">Mis cursos</h2>
-            {cursos.data.map((c) => (
-              <div key={c.id} className="rounded-lg border border-carbon/10 bg-arena">
-                <button
-                  type="button"
-                  aria-expanded={cursoAbierto === c.id}
-                  onClick={() => setCursoAbierto(cursoAbierto === c.id ? null : c.id)}
-                  className="flex min-h-11 w-full items-center justify-between gap-2 px-4 py-3 text-left"
-                >
-                  <span className="font-medium text-carbon">
-                    {c.nombre} · {c.anioLectivo}
-                    {c.turno ? ` · ${c.turno}` : ""}
+        </Tarjeta>
+      ) : seccion === "historial" ? (
+        <Historial cursos={cursos.data} />
+      ) : alumno ? (
+        <HistorialAlumno
+          alumnoId={alumno.id}
+          nombre={`${alumno.nombre} ${alumno.apellido}`}
+          onVolver={() => setAlumno(null)}
+        />
+      ) : (
+        <div className="space-y-2">
+          {cursos.data.map((c) => (
+            <div key={c.id} className={`${CLASE_FILA} overflow-hidden bg-white shadow-tarjeta`}>
+              <button
+                type="button"
+                aria-expanded={cursoAbierto === c.id}
+                onClick={() => setCursoAbierto(cursoAbierto === c.id ? null : c.id)}
+                className="flex min-h-16 w-full items-center gap-4 px-4 py-3 text-left hover:bg-papel/50 focus-visible:outline focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-carbon"
+              >
+                <span className="grid size-11 shrink-0 place-items-center rounded-2xl bg-celeste font-display text-sm font-bold text-carbon">
+                  {c.nombre.slice(0, 3)}
+                </span>
+                <span className="min-w-0 flex-1">
+                  <span className="block truncate font-semibold text-carbon">
+                    {c.nombre}
+                    <span className="font-normal text-carbon/55">
+                      {" "}
+                      · {c.anioLectivo}
+                      {c.turno ? ` · ${c.turno}` : ""}
+                    </span>
                   </span>
-                  <span className="text-sm text-carbon/70">{c.cantidadAlumnos} alumnos</span>
-                </button>
-                {cursoAbierto === c.id && (
-                  <div className="border-t border-carbon/10 px-3 py-2">
-                    <AlumnosDelCurso curso={c} onAlumno={setAlumno} />
-                  </div>
-                )}
-              </div>
-            ))}
-          </div>
-        )}
-      </Tarjeta>
-
-      <p className="text-center text-sm text-carbon/70">
-        <Link href="/admin" className="font-medium text-carbon underline underline-offset-2">
-          Dar de alta un docente
-        </Link>
-      </p>
-    </div>
+                  <span className="block text-xs text-carbon/60">{c.cantidadAlumnos} alumnos</span>
+                </span>
+                <Icono
+                  nombre="flecha"
+                  className={`size-5 shrink-0 text-carbon/40 transition-transform ${cursoAbierto === c.id ? "rotate-90" : ""}`}
+                />
+              </button>
+              {cursoAbierto === c.id && (
+                <div className="border-t border-carbon/[0.07] p-2 sm:p-3">
+                  <AlumnosDelCurso curso={c} onAlumno={setAlumno} />
+                </div>
+              )}
+            </div>
+          ))}
+        </div>
+      )}
+    </AppShell>
   );
 }

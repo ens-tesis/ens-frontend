@@ -8,7 +8,7 @@ import { useEffect, useState } from "react";
 import { Boton } from "@/shared/components/Boton";
 import { Campo } from "@/shared/components/Campo";
 import { MensajeEstado } from "@/shared/components/MensajeEstado";
-import { Tarjeta } from "@/shared/components/Tarjeta";
+import { PantallaAuth } from "./PantallaAuth";
 import { api } from "@/shared/api/client";
 import { rutaPorRol } from "../services/rutaPorRol";
 import { clearToken, setToken, type Usuario } from "../services/session";
@@ -74,12 +74,7 @@ export default function LoginView() {
   }
 
   return (
-    <div className="flex flex-1 items-center justify-center px-4 py-12">
-      <Tarjeta className="w-full max-w-sm space-y-5">
-        <div>
-          <h1 className="text-2xl font-semibold text-carbon">ENS</h1>
-          <p className="text-sm text-carbon/70">Entorno de Navegación Supervisado</p>
-        </div>
+    <PantallaAuth titulo="Ingresá a tu cuenta">
 
         <form
           className="space-y-4"
@@ -122,7 +117,6 @@ export default function LoginView() {
             Crear cuenta
           </Link>
         </p>
-      </Tarjeta>
-    </div>
+    </PantallaAuth>
   );
 }

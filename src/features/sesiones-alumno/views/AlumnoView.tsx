@@ -5,11 +5,11 @@ import type { FormEvent } from "react";
 import { useEffect, useState } from "react";
 import { Badge } from "@/shared/components/Badge";
 import { Boton } from "@/shared/components/Boton";
-import { Campo } from "@/shared/components/Campo";
+import { AppShell, PantallaCargando } from "@/shared/components/AppShell";
 import { IconoModo } from "@/shared/components/IconoModo";
 import { MensajeEstado } from "@/shared/components/MensajeEstado";
-import { Tarjeta } from "@/shared/components/Tarjeta";
-import { clearToken, getToken, useUsuarioActual } from "@/features/auth";
+import { CLASE_FILA_INTERACTIVA, Tarjeta } from "@/shared/components/Tarjeta";
+import { getToken, useUsuarioActual } from "@/features/auth";
 import { mensajeDeCierre, useSesionSocket } from "@/shared/hooks/useSesionSocket";
 import { useSessionStorageInicial } from "@/shared/hooks/useSessionStorageInicial";
 import { hostnameDe } from "@/shared/lib/url";
@@ -131,141 +131,135 @@ export default function AlumnoView() {
     setInputCodigo("");
   }
 
-  function cerrarSesion(): void {
-    clearToken();
-    window.sessionStorage.removeItem(CLAVE_SESION_ACTIVA);
-    router.replace("/login");
-  }
+  if (usuarioQuery.isPending) return <PantallaCargando />;
+  if (!usuarioQuery.data || usuarioQuery.data.usuario.rol !== "alumno") return null;
 
-  if (usuarioQuery.isPending) {
+  const { usuario } = usuarioQuery.data;
+  const conectado = socket.estado === "conectado" || socket.estado === "reconectando";
+
+  // Visor a pantalla completa: sin barra ni navegación, todo el alto para
+  // el sitio. La barra propia de VisorEmbebido (hostname + Volver) alcanza.
+  if (codigoConectado && conectado && urlActiva) {
     return (
-      <div className="flex flex-1 items-center justify-center px-4">
-        <MensajeEstado tipo="cargando">Cargando...</MensajeEstado>
+      <div className="flex h-dvh flex-col p-2 pt-[calc(env(safe-area-inset-top)+0.5rem)] pb-[calc(env(safe-area-inset-bottom)+0.5rem)]">
+        <VisorEmbebido
+          key={urlActiva.id}
+          item={urlActiva}
+          src={srcDe(urlActiva)}
+          onVolver={() => setUrlActiva(null)}
+        />
       </div>
     );
   }
 
-  if (!usuarioQuery.data || usuarioQuery.data.usuario.rol !== "alumno") {
-    return null;
-  }
-
-  const { usuario } = usuarioQuery.data;
-
   return (
-    <div className="mx-auto flex w-full max-w-md flex-1 flex-col gap-6 px-4 py-6">
-      {/* Oculto mientras se ve un iframe (urlActiva): la barra propia de
-          VisorEmbebido (hostname + Volver) ya cubre la navegación, y sacar
-          este header le da más alto al iframe. */}
-      {!urlActiva && (
-        <header className="flex items-center justify-between gap-4">
-          <div>
-            <h1 className="text-lg font-semibold text-carbon">ENS</h1>
-            <p className="text-xs text-carbon/70">{usuario.nombre}</p>
-          </div>
-          <Boton variante="sutil" onClick={cerrarSesion}>
-            Salir
-          </Boton>
-        </header>
-      )}
-
+    <AppShell
+      area="Alumno"
+      usuario={usuario}
+      secciones={[]}
+      titulo={codigoConectado ? "Tu clase" : `Hola, ${usuario.nombre}`}
+      descripcion={
+        codigoConectado
+          ? "Tocá un sitio para abrirlo. Solo podés usar los que habilitó tu docente."
+          : "Ingresá el código que te dio tu docente para unirte a la clase."
+      }
+    >
       {!codigoConectado ? (
-        <Tarjeta className="flex flex-col gap-4">
-          <h2 className="text-base font-semibold text-carbon">Unirte a una clase</h2>
-          <form className="flex flex-col gap-4" onSubmit={conectar}>
-            <Campo
-              id="codigo"
-              label="Código de la sesión"
-              value={inputCodigo}
-              onChange={(e) => setInputCodigo(e.target.value.toUpperCase())}
-              autoCapitalize="characters"
-              autoComplete="off"
-              maxLength={6}
-              placeholder="ABC123"
-              className="text-center font-mono text-2xl tracking-[0.3em] uppercase"
-              required
-            />
-            <Boton type="submit" disabled={!inputCodigo.trim()} className="w-full">
-              Conectarme
-            </Boton>
-          </form>
+        <form
+          onSubmit={conectar}
+          className="pizarron max-w-md space-y-5 rounded-[2rem] p-6 text-arena shadow-flotante sm:p-8"
+        >
+          <label htmlFor="codigo" className="block text-xs font-semibold tracking-[0.16em] text-arena/65 uppercase">
+            Código de la clase
+          </label>
+          <input
+            id="codigo"
+            value={inputCodigo}
+            onChange={(e) => setInputCodigo(e.target.value.toUpperCase())}
+            autoCapitalize="characters"
+            autoComplete="off"
+            maxLength={6}
+            placeholder="ABC123"
+            required
+            className="w-full rounded-2xl border-2 border-arena/25 bg-arena/[0.06] px-3 py-4 text-center font-mono text-4xl font-bold tracking-[0.3em] text-arena uppercase placeholder:text-arena/25 focus-visible:border-violeta focus-visible:outline-none"
+          />
+          <Boton type="submit" disabled={!inputCodigo.trim()} className="w-full">
+            Unirme a la clase
+          </Boton>
+        </form>
+      ) : socket.estado === "conectando" ? (
+        <Tarjeta>
+          <MensajeEstado tipo="cargando">Conectando a la clase {codigoConectado}...</MensajeEstado>
         </Tarjeta>
-      ) : (
-        <div className="flex flex-col gap-4">
-          {socket.estado === "conectando" && (
+      ) : socket.estado === "cerrado" && socket.cierre ? (
+        <Tarjeta className="max-w-md space-y-4">
+          <MensajeEstado tipo="error">{mensajeDeCierre(socket.cierre.code)}</MensajeEstado>
+          <Boton onClick={volver} className="w-full">
+            Ingresar otro código
+          </Boton>
+        </Tarjeta>
+      ) : conectado ? (
+        <div className="space-y-5">
+          <div className="pizarron flex items-center justify-between gap-4 rounded-3xl px-5 py-4 text-arena shadow-flotante">
+            <div>
+              <p className="flex items-center gap-2 text-xs font-semibold text-arena/70">
+                <span
+                  aria-hidden="true"
+                  className={`size-2 rounded-full ${socket.estado === "conectado" ? "latido bg-celeste text-celeste" : "bg-alerta"}`}
+                />
+                {socket.estado === "conectado" ? "Conectado" : "Reconectando..."}
+              </p>
+              <p className="font-mono text-2xl font-bold tracking-[0.2em]">{codigoConectado}</p>
+            </div>
+            <button
+              type="button"
+              onClick={volver}
+              className="min-h-11 rounded-xl px-3 text-sm font-semibold text-arena/75 hover:bg-arena/10 hover:text-arena focus-visible:outline focus-visible:outline-2 focus-visible:outline-arena"
+            >
+              Salir de la clase
+            </button>
+          </div>
+
+          {avisoRevocado && <MensajeEstado tipo="error">{avisoRevocado}</MensajeEstado>}
+          {!socket.sincronizado ? (
+            <MensajeEstado tipo="cargando">Cargando sitios...</MensajeEstado>
+          ) : socket.whitelist.length === 0 ? (
             <Tarjeta>
-              <MensajeEstado tipo="cargando">
-                Conectando a la clase {codigoConectado}...
+              <MensajeEstado tipo="vacio">
+                Tu docente todavía no habilitó sitios. Aparecen acá apenas los agregue.
               </MensajeEstado>
             </Tarjeta>
+          ) : (
+            <ul className="grid grid-cols-2 gap-3 sm:grid-cols-3">
+              {socket.whitelist.map((item) => (
+                <li key={item.id}>
+                  <button
+                    type="button"
+                    onClick={() => abrirUrl(item)}
+                    className={`${CLASE_FILA_INTERACTIVA} flex h-full w-full flex-col items-start gap-4 bg-white p-4 text-left shadow-tarjeta`}
+                  >
+                    <span className="grid size-11 place-items-center rounded-2xl bg-papel">
+                      <IconoModo modo={item.modo} className="size-5 text-carbon/70" />
+                    </span>
+                    <span className="w-full min-w-0 space-y-2">
+                      <span className="block truncate text-sm font-semibold text-carbon">
+                        {hostnameDe(item.url)}
+                      </span>
+                      <Badge variante={item.modo === "mirror" ? "celeste" : "verde"}>
+                        {item.modo === "mirror"
+                          ? "Lectura"
+                          : item.modo === "proxy_general"
+                            ? "Bloqueo real"
+                            : "Permitido"}
+                      </Badge>
+                    </span>
+                  </button>
+                </li>
+              ))}
+            </ul>
           )}
-
-          {socket.estado === "cerrado" && socket.cierre && (
-            <Tarjeta className="flex flex-col gap-4 text-center">
-              <MensajeEstado tipo="error">{mensajeDeCierre(socket.cierre.code)}</MensajeEstado>
-              <Boton onClick={volver} className="w-full">
-                Ingresar otro código
-              </Boton>
-            </Tarjeta>
-          )}
-
-          {(socket.estado === "conectado" || socket.estado === "reconectando") &&
-            (urlActiva ? (
-              <VisorEmbebido
-                key={urlActiva.id}
-                item={urlActiva}
-                src={srcDe(urlActiva)}
-                onVolver={() => setUrlActiva(null)}
-              />
-            ) : (
-              <>
-                <Tarjeta variante="destacada" className="text-center">
-                  <p className="text-sm text-arena/80">
-                    {socket.estado === "conectado" ? "Conectado a la clase" : "Reconectando..."}
-                  </p>
-                  <p className="mt-1 font-mono text-2xl font-bold tracking-[0.2em] text-arena">
-                    {codigoConectado}
-                  </p>
-                </Tarjeta>
-
-                <div className="space-y-3">
-                  <h2 className="text-base font-semibold text-carbon">Sitios permitidos</h2>
-                  {avisoRevocado && <MensajeEstado tipo="error">{avisoRevocado}</MensajeEstado>}
-                  {!socket.sincronizado ? (
-                    <MensajeEstado tipo="cargando">Cargando whitelist...</MensajeEstado>
-                  ) : socket.whitelist.length === 0 ? (
-                    <MensajeEstado tipo="vacio">
-                      El docente todavía no habilitó ninguna URL.
-                    </MensajeEstado>
-                  ) : (
-                    <ul className="space-y-2">
-                      {socket.whitelist.map((item) => (
-                        <li key={item.id}>
-                          <button
-                            type="button"
-                            onClick={() => abrirUrl(item)}
-                            className="flex w-full items-center gap-3 rounded-lg border border-carbon/10 bg-arena px-4 py-3 text-left transition-colors hover:bg-carbon/5"
-                          >
-                            <IconoModo modo={item.modo} className="size-4 shrink-0 text-carbon/50" />
-                            <span className="min-w-0 flex-1 truncate text-sm font-medium text-carbon">
-                              {hostnameDe(item.url)}
-                            </span>
-                            <Badge variante={item.modo === "mirror" ? "celeste" : "verde"}>
-                              {item.modo === "mirror"
-                                ? "Lectura"
-                                : item.modo === "proxy_general"
-                                  ? "Bloqueo real"
-                                  : "Permitido"}
-                            </Badge>
-                          </button>
-                        </li>
-                      ))}
-                    </ul>
-                  )}
-                </div>
-              </>
-            ))}
         </div>
-      )}
-    </div>
+      ) : null}
+    </AppShell>
   );
 }

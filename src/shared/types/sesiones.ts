@@ -2,6 +2,7 @@ export type EstadoPresencia =
   | "conectado"
   | "fuera_de_foco"
   | "ausente_digital"
+  | "actividad_reducida"
   | "pantalla_suspendida"
   | "sin_red"
   | "desconectado";
@@ -60,7 +61,6 @@ export type SesionWsMessage = WhitelistUpdateMessage | ParticipantesUpdateMessag
 
 // Único mensaje que manda el cliente (alumno) hoy: reporte de foco de la
 // pestaña. Ver useSesionSocket.ts (enviarMensaje) y sesiones.ws.ts (backend).
-export interface PresenciaClienteMessage {
-  type: "presencia";
-  estado: "conectado" | "fuera_de_foco";
-}
+export type PresenciaClienteMessage =
+  | { type: "presencia"; estado: "conectado" | "fuera_de_foco" }
+  | { type: "geometria"; reducida: boolean };

@@ -29,7 +29,12 @@ const hora = (iso: string) => new Date(iso).toLocaleTimeString("es-AR", { timeSt
 type FiltroEventos = "todos" | "pedagogicos" | "tecnicos";
 
 function clasificar(e: EventoPresencia): FiltroEventos | null {
-  if (e.estado === "fuera_de_foco" || e.estado === "ausente_digital") return "pedagogicos";
+  if (
+    e.estado === "fuera_de_foco" ||
+    e.estado === "ausente_digital" ||
+    e.estado === "actividad_reducida"
+  )
+    return "pedagogicos";
   if (
     e.estado === "sin_red" ||
     e.estado === "pantalla_suspendida" ||

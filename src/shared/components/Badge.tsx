@@ -1,6 +1,6 @@
 import type { ReactNode } from "react";
 
-type VarianteBadge = "celeste" | "verde" | "rojo" | "amarillo" | "gris";
+type VarianteBadge = "celeste" | "verde" | "rojo" | "amarillo" | "ambar" | "gris";
 
 interface BadgeProps {
   variante?: VarianteBadge;
@@ -16,6 +16,7 @@ const CLASES: Record<VarianteBadge, string> = {
   verde: "bg-verde text-arena",
   rojo: "bg-error text-arena",
   amarillo: "bg-alerta text-carbon",
+  ambar: "bg-ambar text-arena",
   gris: "bg-carbon/10 text-carbon",
 };
 

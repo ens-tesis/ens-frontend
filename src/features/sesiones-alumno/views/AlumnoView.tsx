@@ -128,6 +128,27 @@ export default function AlumnoView({ codigoQr }: { codigoQr: string | null }) {
     return () => document.removeEventListener("visibilitychange", reportarFoco);
   }, [socket.estado, enviarMensaje]);
 
+  // Split-screen (anteproyecto C.2): si la ventana ocupa menos del 60% del
+  // área de la pantalla (pantalla dividida, ventana flotante), se avisa.
+  // Por área y no por lado para no depender de la orientación. Solo se
+  // manda al cambiar; al (re)conectar el servidor arranca en "no reducida".
+  useEffect(() => {
+    if (socket.estado !== "conectado") return;
+
+    let reducidaAnterior = false;
+    function medir(): void {
+      const areaPantalla = screen.availWidth * screen.availHeight;
+      const reducida = areaPantalla > 0 && window.innerWidth * window.innerHeight < areaPantalla * 0.6;
+      if (reducida === reducidaAnterior) return;
+      reducidaAnterior = reducida;
+      enviarMensaje({ type: "geometria", reducida });
+    }
+
+    medir();
+    window.addEventListener("resize", medir);
+    return () => window.removeEventListener("resize", medir);
+  }, [socket.estado, enviarMensaje]);
+
   // Screen Wake Lock (anteproyecto B.1): en una clase expositiva el alumno
   // no toca el celular y el SO apaga la pantalla, lo que el backend vería
   // como pestaña oculta / pantalla suspendida. El navegador suelta el lock

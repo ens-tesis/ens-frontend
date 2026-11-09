@@ -53,6 +53,12 @@
    */
   --color-alerta: #d99a1e;
 
+  /*
+   * Ámbar oscuro del anteproyecto (C.2, pantalla dividida): distinto del
+   * ámbar de "sin red" y del rojo de "ausente". Arena encima: 4.5:1 (AA).
+   */
+  --color-ambar: #8a5a00;
+
   --shadow-tarjeta: 0 1px 2px rgb(38 38 38 / 0.04), 0 8px 24px -12px rgb(20 52 43 / 0.12);
   --shadow-flotante: 0 12px 40px -8px rgb(20 52 43 / 0.28);
 }

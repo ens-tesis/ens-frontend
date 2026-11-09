@@ -16,8 +16,9 @@ const PRIORIDAD_ESTADO: Record<EstadoPresencia, number> = {
   ausente_digital: 1,
   sin_red: 2,
   fuera_de_foco: 3,
-  pantalla_suspendida: 4,
-  conectado: 5,
+  actividad_reducida: 4,
+  pantalla_suspendida: 5,
+  conectado: 6,
 };
 
 export function ParticipantesPanel({ participantes, cargando }: ParticipantesPanelProps) {

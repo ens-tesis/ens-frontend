@@ -42,7 +42,7 @@ function extraerMensajeError(err: unknown): string {
 // Resumen de la clase en el pizarrón: cuántos hay en cada situación.
 const GRUPOS_RESUMEN: { etiqueta: string; estados: EstadoPresencia[]; clase: string }[] = [
   { etiqueta: "Atentos", estados: ["conectado"], clase: "bg-white text-carbon border border-carbon/[0.07]" },
-  { etiqueta: "Fuera de foco", estados: ["fuera_de_foco", "ausente_digital"], clase: "bg-violeta text-carbon" },
+  { etiqueta: "Fuera de foco", estados: ["fuera_de_foco", "ausente_digital", "actividad_reducida"], clase: "bg-violeta text-carbon" },
   { etiqueta: "Sin red", estados: ["sin_red", "pantalla_suspendida"], clase: "bg-alerta text-carbon" },
   { etiqueta: "Se fueron", estados: ["desconectado"], clase: "bg-error text-arena" },
 ];

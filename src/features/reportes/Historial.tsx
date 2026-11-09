@@ -30,7 +30,12 @@ type FiltroEventos = "todos" | "pedagogicos" | "tecnicos";
 
 function clasificar(e: EventoPresencia): FiltroEventos | null {
   if (e.estado === "fuera_de_foco" || e.estado === "ausente_digital") return "pedagogicos";
-  if (e.estado === "sin_red" || e.tipoDesconexion === "HEARTBEAT_TIMEOUT") return "tecnicos";
+  if (
+    e.estado === "sin_red" ||
+    e.estado === "pantalla_suspendida" ||
+    e.tipoDesconexion === "HEARTBEAT_TIMEOUT"
+  )
+    return "tecnicos";
   return null;
 }
 

@@ -17,7 +17,7 @@ export const COLOR_ESTADO: Record<EstadoPresencia, ComponentProps<typeof Badge>[
   conectado: "verde",
   fuera_de_foco: "rojo",
   ausente_digital: "rojo",
-  pantalla_suspendida: "amarillo",
+  pantalla_suspendida: "gris",
   sin_red: "amarillo",
   desconectado: "rojo",
 };

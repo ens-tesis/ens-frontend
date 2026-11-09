@@ -128,6 +128,37 @@ export default function AlumnoView({ codigoQr }: { codigoQr: string | null }) {
     return () => document.removeEventListener("visibilitychange", reportarFoco);
   }, [socket.estado, enviarMensaje]);
 
+  // Screen Wake Lock (anteproyecto B.1): en una clase expositiva el alumno
+  // no toca el celular y el SO apaga la pantalla, lo que el backend vería
+  // como pestaña oculta / pantalla suspendida. El navegador suelta el lock
+  // solo cuando la pestaña se oculta, por eso se vuelve a pedir al volver.
+  // Sin soporte (iOS < 16.4, sin HTTPS) simplemente no hace nada.
+  useEffect(() => {
+    if (socket.estado !== "conectado" || !("wakeLock" in navigator)) return;
+
+    let vigente = true;
+    let sentinel: WakeLockSentinel | null = null;
+
+    function pedir(): void {
+      if (document.visibilityState !== "visible") return;
+      navigator.wakeLock
+        .request("screen")
+        .then((s) => {
+          if (vigente) sentinel = s;
+          else void s.release();
+        })
+        .catch(() => {});
+    }
+
+    pedir();
+    document.addEventListener("visibilitychange", pedir);
+    return () => {
+      vigente = false;
+      document.removeEventListener("visibilitychange", pedir);
+      void sentinel?.release();
+    };
+  }, [socket.estado]);
+
   function conectar(e: FormEvent<HTMLFormElement>): void {
     e.preventDefault();
     const codigo = inputCodigo.trim().toUpperCase();

@@ -284,7 +284,13 @@ export default function AlumnoView({ codigoQr }: { codigoQr: string | null }) {
           </div>
 
           {avisoRevocado && <MensajeEstado tipo="error">{avisoRevocado}</MensajeEstado>}
-          {!socket.sincronizado ? (
+          {socket.estado === "reconectando" && socket.whitelist.length > 0 && (
+            <MensajeEstado tipo="info">
+              Sin conexión: estos son los últimos sitios que habilitó tu docente.
+            </MensajeEstado>
+          )}
+          {/* Con whitelist guardada (sin red) se muestra esa en vez de "cargando". */}
+          {!socket.sincronizado && socket.whitelist.length === 0 ? (
             <MensajeEstado tipo="cargando">Cargando sitios...</MensajeEstado>
           ) : socket.whitelist.length === 0 ? (
             <Tarjeta>

@@ -66,6 +66,32 @@ export function mensajeDeCierre(code: number): string {
 // va a cambiar el resultado, así que ahí no hay backoff, se corta.
 const CIERRES_DEFINITIVOS = new Set(Object.keys(MENSAJES_CIERRE).map(Number));
 
+// Última whitelist recibida por clase (anteproyecto §3.1): con el wifi
+// caído y la página recargada, el alumno sigue viendo sus sitios
+// permitidos hasta que el socket vuelve y el servidor manda la vigente.
+// sessionStorage como el código de clase: dura lo que la pestaña. ponytail:
+// el alumno podría editarla a mano, pero solo vale mientras no hay
+// conexión; al reconectar la pisa la del servidor.
+const claveWhitelist = (codigo: string) => `ens_whitelist_${codigo}`;
+
+function leerWhitelistGuardada(codigo: string): WhitelistUrl[] | null {
+  try {
+    const guardada = window.sessionStorage.getItem(claveWhitelist(codigo));
+    return guardada ? (JSON.parse(guardada) as WhitelistUrl[]) : null;
+  } catch {
+    return null;
+  }
+}
+
+function guardarWhitelist(codigo: string, whitelist: WhitelistUrl[] | null): void {
+  try {
+    if (whitelist) window.sessionStorage.setItem(claveWhitelist(codigo), JSON.stringify(whitelist));
+    else window.sessionStorage.removeItem(claveWhitelist(codigo));
+  } catch {
+    // storage lleno o bloqueado: queda solo en memoria
+  }
+}
+
 const BACKOFF_INICIAL_MS = 1000;
 const BACKOFF_MAX_MS = 30000;
 
@@ -182,16 +208,23 @@ export function useSesionSocket(
       token,
       {
         onReset: () => {
-          setWhitelist([]);
+          const guardada = leerWhitelistGuardada(codigo);
+          setWhitelist(guardada ?? []);
           setParticipantes([]);
           setCierre(null);
           setSincronizado(false);
         },
         onEstado: setEstado,
-        onWhitelist: setWhitelist,
+        onWhitelist: (w) => {
+          guardarWhitelist(codigo, w);
+          setWhitelist(w);
+        },
         onParticipantes: setParticipantes,
         onMensajeRecibido: () => setSincronizado(true),
         onCierre: (c) => {
+          // Cierre definitivo (clase finalizada, sin permiso...): esa
+          // whitelist ya no rige.
+          guardarWhitelist(codigo, null);
           setEstado("cerrado");
           setCierre(c);
         },

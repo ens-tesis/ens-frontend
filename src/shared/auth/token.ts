@@ -10,6 +10,9 @@
 // (recién se nota en el próximo request/reconexión que la rechace). Para
 // producción real convendría una cookie httpOnly + refresh token.
 const TOKEN_KEY = "ens_token";
+// Copia del último /auth/me (ver useUsuarioActual): se descarta con
+// cualquier cambio de token para no mostrar el usuario anterior sin red.
+export const CLAVE_ME = "ens_me";
 
 export function getToken(): string | null {
   if (typeof window === "undefined") return null;
@@ -18,8 +21,10 @@ export function getToken(): string | null {
 
 export function setToken(token: string): void {
   window.localStorage.setItem(TOKEN_KEY, token);
+  window.sessionStorage.removeItem(CLAVE_ME);
 }
 
 export function clearToken(): void {
   window.localStorage.removeItem(TOKEN_KEY);
+  window.sessionStorage.removeItem(CLAVE_ME);
 }

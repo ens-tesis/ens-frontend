@@ -8,3 +8,9 @@ export function hostnameDe(url: string): string {
     return url;
   }
 }
+
+// Lo que se muestra de un sitio: el nombre que le puso el docente o, si no
+// tiene, el dominio.
+export function tituloDe(item: { url: string; nombre: string | null }): string {
+  return item.nombre || hostnameDe(item.url);
+}

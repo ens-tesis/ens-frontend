@@ -23,11 +23,31 @@ export interface WhitelistUrl {
   id: number;
   sesionId: number;
   url: string;
+  nombre: string | null;
   agregadoPor: number;
   activo: boolean;
   modo: "directo" | "mirror" | "proxy_general";
   createdAt: string;
   removedAt: string | null;
+}
+
+// Link que el docente fija para que se cargue solo al abrir una clase
+// (cursoId null = en todos sus cursos).
+export interface LinkFijo {
+  id: number;
+  cursoId: number | null;
+  curso: string | null;
+  url: string;
+  nombre: string | null;
+  modo: WhitelistUrl["modo"];
+}
+
+// Sitio que el docente ya usó en otra clase del mismo curso.
+export interface LinkReciente {
+  url: string;
+  nombre: string | null;
+  modo: WhitelistUrl["modo"];
+  usadoAt: string;
 }
 
 export interface ParticipanteConectado {

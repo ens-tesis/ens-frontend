@@ -1,3 +1,4 @@
+import { formatoDuracion } from "@/shared/lib/presencia";
 import type { EstadoPresencia } from "@/shared/types/sesiones";
 
 export interface EventoClase {
@@ -50,8 +51,45 @@ export function armarRegistro(eventos: EventoClase[]): EntradaRegistro[] {
 }
 
 export function duracion(desde: string, hasta: string): string {
-  const seg = Math.max(0, Math.round((Date.parse(hasta) - Date.parse(desde)) / 1000));
-  if (seg < 60) return `${seg} s`;
-  const min = Math.floor(seg / 60);
-  return seg % 60 ? `${min} min ${seg % 60} s` : `${min} min`;
+  return formatoDuracion((Date.parse(hasta) - Date.parse(desde)) / 1000);
+}
+
+// Tiempo fuera de foco = lo que no es un problema técnico: fuera de foco,
+// ausente digital y pantalla dividida (mismo criterio que los reportes).
+const FUERA_DE_FOCO = new Set<EstadoPresencia>(["fuera_de_foco", "ausente_digital", "actividad_reducida"]);
+
+export type Nivel = "verde" | "ambar" | "rojo";
+
+export interface Atencion {
+  distracciones: number;
+  segundosFuera: number;
+  nivel: Nivel;
+}
+
+// Semáforo: rojo cuando supera el umbral de distracciones del curso (el
+// mismo que dispara la alerta) o lleva 5 min fuera; ámbar desde 2
+// distracciones o 1 min fuera.
+const SEG_AMBAR = 60;
+const SEG_ROJO = 300;
+
+// Por alumno, a partir del registro: cuántas veces se distrajo y cuánto
+// tiempo estuvo fuera (lo que sigue abierto cuenta hasta `ahora`).
+export function atencionPorAlumno(entradas: EntradaRegistro[], umbral: number, ahora: number): Map<number, Atencion> {
+  const porAlumno = new Map<number, Atencion>();
+  for (const e of entradas) {
+    if (!FUERA_DE_FOCO.has(e.estado)) continue;
+    const a = porAlumno.get(e.alumnoId) ?? { distracciones: 0, segundosFuera: 0, nivel: "verde" as Nivel };
+    if (e.estado === "fuera_de_foco") a.distracciones++;
+    a.segundosFuera += Math.max(0, ((e.hasta ? Date.parse(e.hasta) : ahora) - Date.parse(e.desde)) / 1000);
+    porAlumno.set(e.alumnoId, a);
+  }
+  for (const a of porAlumno.values()) {
+    a.nivel =
+      a.distracciones > umbral || a.segundosFuera >= SEG_ROJO
+        ? "rojo"
+        : a.distracciones >= 2 || a.segundosFuera >= SEG_AMBAR
+          ? "ambar"
+          : "verde";
+  }
+  return porAlumno;
 }

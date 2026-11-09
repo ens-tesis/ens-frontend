@@ -13,7 +13,7 @@ import { getToken, useUsuarioActual } from "@/features/auth";
 import { mensajeDeCierre, useSesionSocket } from "@/shared/hooks/useSesionSocket";
 import { useSessionStorageInicial } from "@/shared/hooks/useSessionStorageInicial";
 import { encolarEventoOffline, sincronizarEventosOffline } from "@/shared/lib/eventosOffline";
-import { hostnameDe } from "@/shared/lib/url";
+import { tituloDe } from "@/shared/lib/url";
 import type { WhitelistUrl } from "@/shared/types/sesiones";
 import { ActivarHuella } from "../components/ActivarHuella";
 import { VisorEmbebido } from "../components/VisorEmbebido";
@@ -321,7 +321,7 @@ export default function AlumnoView({ codigoQr }: { codigoQr: string | null }) {
                     </span>
                     <span className="w-full min-w-0 space-y-2">
                       <span className="block truncate text-sm font-semibold text-carbon">
-                        {hostnameDe(item.url)}
+                        {tituloDe(item)}
                       </span>
                       <Badge variante={item.modo === "mirror" ? "celeste" : "verde"}>
                         {item.modo === "mirror"

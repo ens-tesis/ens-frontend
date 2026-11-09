@@ -5,7 +5,7 @@ import { Badge } from "@/shared/components/Badge";
 import { Boton } from "@/shared/components/Boton";
 import { IconoModo } from "@/shared/components/IconoModo";
 import { MensajeEstado } from "@/shared/components/MensajeEstado";
-import { hostnameDe } from "@/shared/lib/url";
+import { tituloDe } from "@/shared/lib/url";
 import type { WhitelistUrl } from "@/shared/types/sesiones";
 
 // Heurística, no detección exacta — y ya sabíamos que era floja (muchos
@@ -62,7 +62,7 @@ export function VisorEmbebido({ item, src, onVolver }: VisorEmbebidoProps) {
       <div className="flex items-center justify-between gap-3 rounded-2xl border border-carbon/[0.07] bg-white py-1.5 pr-1.5 pl-3 shadow-tarjeta">
         <div className="flex min-w-0 items-center gap-2">
           <IconoModo modo={item.modo} className="size-4 shrink-0 text-carbon/50" />
-          <span className="truncate text-sm font-medium text-carbon">{hostnameDe(item.url)}</span>
+          <span className="truncate text-sm font-medium text-carbon">{tituloDe(item)}</span>
           {item.modo === "mirror" && <Badge variante="celeste">Lectura</Badge>}
           {item.modo === "proxy_general" && <Badge variante="verde">Bloqueo real</Badge>}
         </div>
@@ -93,7 +93,7 @@ export function VisorEmbebido({ item, src, onVolver }: VisorEmbebidoProps) {
             key={item.id}
             src={src}
             onLoad={manejarCarga}
-            title={hostnameDe(item.url)}
+            title={tituloDe(item)}
             className="h-full min-h-[75vh] w-full rounded-2xl border border-carbon/[0.07] bg-white"
             // Antes sin sandbox (capacidades totales). Hoy hay tres modos,
             // cada uno con su propio nivel de confianza y su propio sandbox:

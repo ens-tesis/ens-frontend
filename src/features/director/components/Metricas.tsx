@@ -9,14 +9,19 @@ import { Icono } from "@/shared/components/Icono";
 import { MensajeEstado } from "@/shared/components/MensajeEstado";
 import { Pestanas } from "@/shared/components/Pestanas";
 import { CLASE_FILA, Tarjeta } from "@/shared/components/Tarjeta";
+import { formatoDuracion } from "@/shared/lib/presencia";
 
 type Agrupar = "curso" | "docente";
+
+const valor = (f: FilaMetricas, k: keyof FilaMetricas) =>
+  k === "segundosFueraDeFoco" ? formatoDuracion(f[k]) : f[k];
 
 const COLUMNAS: [keyof FilaMetricas, string][] = [
   ["sesiones", "Sesiones"],
   ["alumnosUnicos", "Alumnos únicos"],
   ["participaciones", "Participaciones"],
   ["distracciones", "Distracciones"],
+  ["segundosFueraDeFoco", "Tiempo fuera de foco"],
   ["ausenciasDigitales", "Ausencias digitales"],
   ["cortesDeRed", "Cortes de red"],
   ["desconexionesPorRed", "Desconexiones por red"],
@@ -136,7 +141,7 @@ export function Metricas() {
                 <dl className="mt-3 grid grid-cols-3 gap-2 text-center">
                   {COLUMNAS.slice(0, 6).map(([k, t]) => (
                     <div key={k}>
-                      <dd className="font-display text-xl font-bold tabular-nums text-carbon">{f[k]}</dd>
+                      <dd className="font-display text-xl font-bold tabular-nums text-carbon">{valor(f, k)}</dd>
                       <dt className="text-[11px] leading-tight text-carbon/60">{t}</dt>
                     </div>
                   ))}
@@ -166,7 +171,7 @@ export function Metricas() {
                     </td>
                     {COLUMNAS.map(([k]) => (
                       <td key={k} className="px-3 py-3 text-right tabular-nums text-carbon">
-                        {f[k]}
+                        {valor(f, k)}
                       </td>
                     ))}
                   </tr>

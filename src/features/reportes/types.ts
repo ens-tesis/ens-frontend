@@ -19,6 +19,7 @@ export interface Curso {
 
 export interface ConteosEventos {
   distracciones: number;
+  segundosFueraDeFoco: number;
   ausenciasDigitales: number;
   cortesDeRed: number;
   desconexionesPorRed: number;

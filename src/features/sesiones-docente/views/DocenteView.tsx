@@ -17,6 +17,7 @@ import { useSessionStorageInicial } from "@/shared/hooks/useSessionStorageInicia
 import { NotificacionesCampana } from "@/features/notificaciones";
 import { useCursos } from "@/features/reportes";
 import { CodigoSesion } from "../components/CodigoSesion";
+import { LinksFijos } from "../components/LinksFijos";
 import { ParticipantesPanel } from "../components/ParticipantesPanel";
 import { RegistroClase, useRegistroClase } from "../components/RegistroClase";
 import { WhitelistPanel } from "../components/WhitelistPanel";
@@ -26,6 +27,9 @@ import { WhitelistPanel } from "../components/WhitelistPanel";
 // refresh de página pero no a cerrar la pestaña, y no está pensado para
 // varias pestañas del mismo docente en simultáneo.
 const CLAVE_SESION_ACTIVA = "ens_sesion_activa_codigo";
+
+// Igual que el default de la base (migración 020) para clases sin curso.
+const UMBRAL_DISTRACCIONES_DEFAULT = 3;
 
 type Seccion = "clase" | "alumnos" | "registro" | "sitios";
 
@@ -111,6 +115,7 @@ export default function DocenteView() {
     ? socket.participantes
     : (sesionQuery.data?.participantes ?? []);
   const entradasRegistro = registro.data ?? [];
+  const cursoDeLaClase = cursos.data?.find((c) => c.id === sesionQuery.data?.sesion.cursoId);
 
   // Sin clase activa no hay alumnos ni sitios que mostrar: una sola pantalla.
   const secciones: ItemNav<Seccion>[] = codigoActivo
@@ -132,7 +137,7 @@ export default function DocenteView() {
         },
     alumnos: {
       titulo: "Alumnos",
-      descripcion: "Primero aparece quien necesita atención. Se actualiza solo, en tiempo real.",
+      descripcion: "Primero quien más se distrajo, con su tiempo fuera de foco. Se actualiza solo, en tiempo real.",
     },
     registro: {
       titulo: "Registro de la clase",
@@ -179,6 +184,7 @@ export default function DocenteView() {
       )}
 
       {!codigoActivo ? (
+        <div className="space-y-4">
         <section className="pizarron max-w-xl space-y-5 rounded-[2rem] p-6 text-arena shadow-flotante sm:p-8">
           <p className="font-display text-2xl font-bold sm:text-3xl">¿Con qué curso das clase?</p>
           <label className="block space-y-1.5">
@@ -201,11 +207,13 @@ export default function DocenteView() {
             </p>
           )}
         </section>
+        <LinksFijos />
+        </div>
       ) : vista === "clase" ? (
         <div className="space-y-4">
           <CodigoSesion
             codigo={codigoActivo}
-            curso={cursos.data?.find((c) => c.id === sesionQuery.data?.sesion.cursoId)?.nombre ?? null}
+            curso={cursoDeLaClase?.nombre ?? null}
             enVivo={socket.estado === "conectado"}
             estado={
               socket.estado === "conectado"
@@ -263,7 +271,12 @@ export default function DocenteView() {
           </Tarjeta>
         </div>
       ) : vista === "alumnos" ? (
-        <ParticipantesPanel participantes={participantes} cargando={!datosListos} />
+        <ParticipantesPanel
+          participantes={participantes}
+          cargando={!datosListos}
+          entradas={entradasRegistro}
+          umbral={cursoDeLaClase?.umbralDistracciones ?? UMBRAL_DISTRACCIONES_DEFAULT}
+        />
       ) : vista === "registro" ? (
         <RegistroClase
           entradas={entradasRegistro}
@@ -272,7 +285,12 @@ export default function DocenteView() {
           participantes={participantes}
         />
       ) : (
-        <WhitelistPanel codigo={codigoActivo} whitelist={whitelist} cargando={!datosListos} />
+        <WhitelistPanel
+          codigo={codigoActivo}
+          whitelist={whitelist}
+          cargando={!datosListos}
+          curso={cursoDeLaClase ?? null}
+        />
       )}
     </AppShell>
   );

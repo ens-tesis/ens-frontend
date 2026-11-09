@@ -9,7 +9,7 @@ import { Icono } from "@/shared/components/Icono";
 import { MensajeEstado } from "@/shared/components/MensajeEstado";
 import { Pestanas } from "@/shared/components/Pestanas";
 import { CLASE_FILA, CLASE_FILA_INTERACTIVA, Tarjeta } from "@/shared/components/Tarjeta";
-import { COLOR_ESTADO, ETIQUETA_DESCONEXION, ETIQUETA_ESTADO } from "@/shared/lib/presencia";
+import { COLOR_ESTADO, ETIQUETA_DESCONEXION, ETIQUETA_ESTADO, formatoDuracion } from "@/shared/lib/presencia";
 import type {
   ConteosEventos,
   Curso,
@@ -74,6 +74,9 @@ function Conteos({ c }: { c: ConteosEventos }) {
   return (
     <div className="flex flex-wrap gap-1.5">
       <Badge variante={c.distracciones ? "rojo" : "celeste"}>{c.distracciones} distracciones</Badge>
+      {c.segundosFueraDeFoco > 0 && (
+        <Badge variante="rojo">{formatoDuracion(c.segundosFueraDeFoco)} fuera de foco</Badge>
+      )}
       <Badge variante={c.ausenciasDigitales ? "rojo" : "celeste"}>
         {c.ausenciasDigitales} ausencias digitales
       </Badge>

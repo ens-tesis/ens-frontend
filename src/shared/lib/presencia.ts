@@ -24,6 +24,15 @@ export const COLOR_ESTADO: Record<EstadoPresencia, ComponentProps<typeof Badge>[
   desconectado: "rojo",
 };
 
+// "45 s", "2 min", "3 min 5 s", "1 h 12 min".
+export function formatoDuracion(segundos: number): string {
+  const seg = Math.max(0, Math.round(segundos));
+  if (seg < 60) return `${seg} s`;
+  const min = Math.floor(seg / 60);
+  if (min >= 60) return min % 60 ? `${Math.floor(min / 60)} h ${min % 60} min` : `${min / 60} h`;
+  return seg % 60 ? `${min} min ${seg % 60} s` : `${min} min`;
+}
+
 // Distingue infracción pedagógica de incidente técnico (anteproyecto,
 // filtrado por tipo de desconexión).
 export const ETIQUETA_DESCONEXION: Record<string, string> = {

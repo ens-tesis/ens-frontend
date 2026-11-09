@@ -138,3 +138,39 @@ export function useNotificaciones() {
       void Notification.requestPermission().then(() => setVersionPermiso((v) => v + 1)),
   };
 }
+
+// US-PC-02: alertas silenciadas por alumno (sin vencimiento) o todas por
+// un período. El backend directamente no crea la notificación.
+export interface Silencio {
+  id: number;
+  alumnoId: number | null;
+  alumnoNombre: string | null;
+  hasta: string | null;
+}
+
+const CLAVE_SILENCIOS = ["notificaciones", "silencios"];
+
+export function useSilencios(enabled: boolean) {
+  const queryClient = useQueryClient();
+  const query = useQuery({
+    queryKey: CLAVE_SILENCIOS,
+    queryFn: () => api.get<{ silencios: Silencio[] }>("/notificaciones/silencios").then((r) => r.data.silencios),
+    enabled,
+  });
+  const silenciar = useMutation({
+    mutationFn: (body: { alumnoId: number } | { horas: number }) =>
+      api.post<{ silencios: Silencio[] }>("/notificaciones/silencios", body),
+    onSuccess: (res) => queryClient.setQueryData(CLAVE_SILENCIOS, res.data.silencios),
+  });
+  const reactivar = useMutation({
+    mutationFn: (id: number) => api.delete(`/notificaciones/silencios/${id}`),
+    onSuccess: (_, id) =>
+      queryClient.setQueryData<Silencio[]>(CLAVE_SILENCIOS, (prev) => (prev ?? []).filter((s) => s.id !== id)),
+  });
+  return {
+    silencios: query.data ?? [],
+    silenciar: silenciar.mutate,
+    reactivar: reactivar.mutate,
+    ocupado: silenciar.isPending || reactivar.isPending,
+  };
+}

@@ -13,6 +13,7 @@ export interface Curso {
   anioLectivo: number;
   turno: string | null;
   cantidadAlumnos: number;
+  umbralDistracciones: number;
   preceptores: PersonaResumen[];
 }
 

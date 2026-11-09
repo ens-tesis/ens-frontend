@@ -4,7 +4,21 @@ import { useState } from "react";
 import { Boton } from "@/shared/components/Boton";
 import { Icono } from "@/shared/components/Icono";
 import { MensajeEstado } from "@/shared/components/MensajeEstado";
-import { TITULO_NOTIFICACION, useNotificaciones, type TipoNotificacion } from "./useNotificaciones";
+import {
+  TITULO_NOTIFICACION,
+  useNotificaciones,
+  useSilencios,
+  type TipoNotificacion,
+} from "./useNotificaciones";
+
+const PAUSAS = [
+  { etiqueta: "1 hora", horas: 1 },
+  { etiqueta: "1 día", horas: 24 },
+  { etiqueta: "1 semana", horas: 24 * 7 },
+];
+
+const CLASE_LINK =
+  "min-h-8 rounded-lg px-2 text-xs font-semibold text-carbon/70 hover:text-carbon focus-visible:outline focus-visible:outline-2 focus-visible:outline-carbon disabled:opacity-50";
 
 // sin_red es advertencia (puede volver solo); el resto, alerta.
 const PUNTO: Record<TipoNotificacion, string> = {
@@ -24,6 +38,8 @@ const horaCorta = (iso: string) =>
 export function NotificacionesCampana() {
   const { notificaciones, noLeidas, marcarLeidas, permiso, pedirPermiso } = useNotificaciones();
   const [abierto, setAbierto] = useState(false);
+  const { silencios, silenciar, reactivar, ocupado } = useSilencios(abierto);
+  const alumnosSilenciados = new Set(silencios.filter((s) => !s.hasta).map((s) => s.alumnoId));
 
   return (
     <div className="sm:relative" onKeyDown={(e) => e.key === "Escape" && setAbierto(false)}>
@@ -85,6 +101,37 @@ export function NotificacionesCampana() {
                 </div>
               )}
 
+              <div className="space-y-2 rounded-2xl border border-carbon/[0.07] p-3">
+                {silencios.length > 0 && (
+                  <ul className="space-y-1">
+                    {silencios.map((s) => (
+                      <li key={s.id} className="flex items-center justify-between gap-2 text-sm text-carbon">
+                        <span className="min-w-0">
+                          <span className="font-semibold">{s.alumnoNombre ?? "Todas las alertas"}</span>
+                          <span className="text-carbon/60">
+                            {" "}
+                            · silenciado {s.hasta ? `hasta ${horaCorta(s.hasta)}` : "hasta que lo reactives"}
+                          </span>
+                        </span>
+                        <button type="button" disabled={ocupado} onClick={() => reactivar(s.id)} className={CLASE_LINK}>
+                          Reactivar
+                        </button>
+                      </li>
+                    ))}
+                  </ul>
+                )}
+                <div className="flex flex-wrap items-center gap-1">
+                  <span className="mr-1 text-xs text-carbon/60">Pausar todas por</span>
+                  {PAUSAS.map((p) => (
+                    <button key={p.horas} type="button" disabled={ocupado}
+                      onClick={() => silenciar({ horas: p.horas })}
+                      className={`${CLASE_LINK} border border-carbon/10`}>
+                      {p.etiqueta}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
               {notificaciones.length === 0 ? (
                 <p className="px-2 py-8 text-center text-sm text-carbon/55">Sin alertas por ahora.</p>
               ) : (
@@ -108,6 +155,13 @@ export function NotificacionesCampana() {
                           </span>
                         </div>
                         <p className={`text-sm ${n.leida ? "text-carbon/55" : "text-carbon/80"}`}>{n.mensaje}</p>
+                        {n.alumnoId !== null && !alumnosSilenciados.has(n.alumnoId) && (
+                          <button type="button" disabled={ocupado}
+                            onClick={() => silenciar({ alumnoId: n.alumnoId! })}
+                            className={`${CLASE_LINK} -ml-2`}>
+                            Silenciar a este alumno
+                          </button>
+                        )}
                       </div>
                     </li>
                   ))}

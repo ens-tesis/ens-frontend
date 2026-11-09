@@ -78,6 +78,46 @@ function PrecargarAlumno({ cursoId }: { cursoId: number }) {
   );
 }
 
+// US-PC-02: a partir de cuántas distracciones en una clase se avisa al
+// docente y a los preceptores del curso.
+function UmbralDistracciones({ curso }: { curso: Curso }) {
+  const queryClient = useQueryClient();
+  const [valor, setValor] = useState(String(curso.umbralDistracciones));
+  const guardar = useMutation({
+    mutationFn: () => api.patch(`/cursos/${curso.id}`, { umbralDistracciones: Number(valor) }),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["cursos"] }),
+  });
+
+  return (
+    <form
+      className="space-y-3 rounded-2xl bg-papel/60 p-4 md:col-span-2"
+      onSubmit={(e) => {
+        e.preventDefault();
+        guardar.mutate();
+      }}
+    >
+      <h4 className="text-sm font-semibold text-carbon">Alerta de distracciones</h4>
+      <div className="flex flex-wrap items-end gap-3">
+        <div className="w-28">
+          <Campo id={`umbral-${curso.id}`} label="Más de" type="number" min={1} max={50} required
+            value={valor} onChange={(e) => setValor(e.target.value)} />
+        </div>
+        <p className="pb-3 text-sm text-carbon/70">distracciones en una misma clase</p>
+        <Boton type="submit" variante="sutil" cargando={guardar.isPending}
+          disabled={Number(valor) === curso.umbralDistracciones}>
+          Guardar
+        </Boton>
+      </div>
+      {guardar.isError && (
+        <MensajeEstado tipo="error">{mensajeDeError(guardar.error, "No se pudo guardar el umbral.")}</MensajeEstado>
+      )}
+      {guardar.isSuccess && Number(valor) === curso.umbralDistracciones && (
+        <MensajeEstado tipo="exito">Guardado.</MensajeEstado>
+      )}
+    </form>
+  );
+}
+
 function nombreDe(u: { nombre: string; apellido?: string }) {
   return `${u.apellido ? `${u.apellido}, ` : ""}${u.nombre}`;
 }
@@ -199,6 +239,7 @@ function DetalleCurso({ curso, esPreceptor }: { curso: Curso; esPreceptor: boole
         onQuitar={(id) => cambio.mutate({ metodo: "delete", recurso: "alumnos", id })}
         error={cambio.variables?.recurso === "alumnos" ? error : null}
       />
+      <UmbralDistracciones curso={curso} />
       <PrecargarAlumno cursoId={curso.id} />
     </div>
   );

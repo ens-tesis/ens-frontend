@@ -7,9 +7,10 @@ import { Historial, useCursos } from "@/features/reportes";
 import { AppShell, PantallaCargando, type ItemNav } from "@/shared/components/AppShell";
 import { GestionCursos } from "../components/GestionCursos";
 import { GestionUsuarios } from "../components/GestionUsuarios";
+import { ImportarSie } from "../components/ImportarSie";
 import { Metricas } from "../components/Metricas";
 
-type Seccion = "metricas" | "historial" | "cursos" | "usuarios";
+type Seccion = "metricas" | "historial" | "cursos" | "usuarios" | "importar";
 
 const SECCIONES: (ItemNav<Seccion> & { descripcion: string })[] = [
   {
@@ -35,6 +36,12 @@ const SECCIONES: (ItemNav<Seccion> & { descripcion: string })[] = [
     etiqueta: "Usuarios",
     icono: "usuarios",
     descripcion: "Cambiá roles y activá o desactivá cuentas.",
+  },
+  {
+    id: "importar",
+    etiqueta: "Importar SIE",
+    icono: "alta",
+    descripcion: "Cargá de una vez a los alumnos desde el listado exportado del SIE.",
   },
 ];
 
@@ -64,6 +71,7 @@ export default function DirectorView() {
       {seccion === "historial" && <Historial cursos={cursos.data ?? []} />}
       {seccion === "cursos" && <GestionCursos />}
       {seccion === "usuarios" && <GestionUsuarios actor={usuario} />}
+      {seccion === "importar" && <ImportarSie />}
     </AppShell>
   );
 }

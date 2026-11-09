@@ -51,11 +51,14 @@ export default function DocenteView() {
   const router = useRouter();
   const usuarioQuery = useUsuarioActual();
   const codigoGuardado = useSessionStorageInicial(CLAVE_SESION_ACTIVA);
-  const [codigoNuevo, setCodigoNuevo] = useState<string | null>(null);
+  // undefined = todavía no se creó ni finalizó nada en esta pestaña (manda
+  // lo guardado); null = el docente finalizó la clase.
+  const [codigoOverride, setCodigoOverride] = useState<string | null | undefined>(undefined);
   const [cursoId, setCursoId] = useState("");
   const [seccion, setSeccion] = useState<Seccion>("clase");
+  const [confirmarFin, setConfirmarFin] = useState(false);
   const cursos = useCursos(usuarioQuery.data?.usuario.rol === "docente");
-  const codigoActivo = codigoNuevo ?? codigoGuardado;
+  const codigoSesion = codigoOverride !== undefined ? codigoOverride : codigoGuardado;
 
   useEffect(() => {
     if (usuarioQuery.data && usuarioQuery.data.usuario.rol !== "docente") {
@@ -63,15 +66,18 @@ export default function DocenteView() {
     }
   }, [usuarioQuery.data, router]);
 
+  const sesionQuery = useQuery({
+    queryKey: ["sesion", codigoSesion],
+    queryFn: () =>
+      api.get<SesionCompleta>(`/sesiones/${codigoSesion}`).then((res) => res.data),
+    enabled: Boolean(codigoSesion),
+  });
+  // Una clase guardada en la pestaña que ya terminó (p. ej. se finalizó y
+  // se recargó) no se muestra como en vivo.
+  const codigoActivo = sesionQuery.data?.sesion.activa === false ? null : codigoSesion;
+
   const token = getToken();
   const socket = useSesionSocket(codigoActivo, token);
-
-  const sesionQuery = useQuery({
-    queryKey: ["sesion", codigoActivo],
-    queryFn: () =>
-      api.get<SesionCompleta>(`/sesiones/${codigoActivo}`).then((res) => res.data),
-    enabled: Boolean(codigoActivo),
-  });
 
   const crearSesion = useMutation({
     mutationFn: () =>
@@ -79,7 +85,17 @@ export default function DocenteView() {
     onSuccess: (res) => {
       const { codigo } = res.data.sesion;
       window.sessionStorage.setItem(CLAVE_SESION_ACTIVA, codigo);
-      setCodigoNuevo(codigo);
+      setCodigoOverride(codigo);
+      setSeccion("clase");
+    },
+  });
+
+  const finalizarSesion = useMutation({
+    mutationFn: () => api.post(`/sesiones/${codigoActivo}/finalizar`),
+    onSuccess: () => {
+      window.sessionStorage.removeItem(CLAVE_SESION_ACTIVA);
+      setCodigoOverride(null);
+      setConfirmarFin(false);
     },
   });
 
@@ -131,7 +147,7 @@ export default function DocenteView() {
       descripcion={encabezado[vista].descripcion}
       acciones={<NotificacionesCampana />}
     >
-      {codigoActivo && socket.estado === "cerrado" && socket.cierre && (
+      {codigoActivo && !finalizarSesion.isPending && socket.estado === "cerrado" && socket.cierre && (
         <Tarjeta className="flex flex-col gap-3 border-error/30 sm:flex-row sm:items-center sm:justify-between">
           <MensajeEstado tipo="error">
             Se cortó la conexión en vivo: {socket.cierre.reason || "sin detalle"}.
@@ -141,7 +157,7 @@ export default function DocenteView() {
           </Boton>
         </Tarjeta>
       )}
-      {sesionQuery.isError && (
+      {codigoActivo && sesionQuery.isError && (
         <MensajeEstado tipo="error">No se pudo cargar la información de la clase.</MensajeEstado>
       )}
 
@@ -197,6 +213,37 @@ export default function DocenteView() {
               </button>
             ))}
           </div>
+          <Tarjeta className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+            {confirmarFin ? (
+              <>
+                <p className="text-sm text-carbon">
+                  ¿Finalizar la clase? Los alumnos se desconectan y ya nadie puede unirse con este código.
+                </p>
+                <div className="flex shrink-0 gap-2">
+                  <Boton variante="sutil" onClick={() => setConfirmarFin(false)} disabled={finalizarSesion.isPending}>
+                    Cancelar
+                  </Boton>
+                  <Boton
+                    cargando={finalizarSesion.isPending}
+                    onClick={() => finalizarSesion.mutate()}
+                    className="bg-error text-arena hover:bg-error/90"
+                  >
+                    Sí, finalizar
+                  </Boton>
+                </div>
+              </>
+            ) : (
+              <>
+                <p className="text-sm text-carbon/70">¿Terminó la hora? Cerrá la clase para que quede en el historial.</p>
+                <Boton variante="sutil" onClick={() => setConfirmarFin(true)} className="shrink-0">
+                  Finalizar clase
+                </Boton>
+              </>
+            )}
+            {finalizarSesion.isError && (
+              <MensajeEstado tipo="error">No se pudo finalizar la clase. Intentá de nuevo.</MensajeEstado>
+            )}
+          </Tarjeta>
         </div>
       ) : vista === "alumnos" ? (
         <ParticipantesPanel participantes={participantes} cargando={!datosListos} />

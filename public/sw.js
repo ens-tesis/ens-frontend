@@ -78,6 +78,85 @@ self.addEventListener("message", (event) => {
   );
 });
 
+// --- Eventos offline (Anexo D.3) ---
+// Cambios de foco del alumno sin red, en IndexedDB. Se mandan en lote al
+// volver la red: por Background Sync ("sync") o cuando la página avisa
+// que reconectó ("sincronizar"). Cada registro lleva api/código/token
+// porque el SW no tiene la sesión de la página.
+
+const TAG_SYNC = "ens-eventos-offline";
+
+function abrirDb() {
+  return new Promise((ok, mal) => {
+    const req = indexedDB.open("ens", 1);
+    req.onupgradeneeded = () => req.result.createObjectStore("eventos", { autoIncrement: true });
+    req.onsuccess = () => ok(req.result);
+    req.onerror = () => mal(req.error);
+  });
+}
+
+function pedido(req) {
+  return new Promise((ok, mal) => {
+    req.onsuccess = () => ok(req.result);
+    req.onerror = () => mal(req.error);
+  });
+}
+
+async function encolar(evento) {
+  const db = await abrirDb();
+  await pedido(db.transaction("eventos", "readwrite").objectStore("eventos").add(evento));
+}
+
+async function sincronizar() {
+  const db = await abrirDb();
+  const store = db.transaction("eventos", "readonly").objectStore("eventos");
+  const [claves, eventos] = await Promise.all([pedido(store.getAllKeys()), pedido(store.getAll())]);
+
+  // Un POST por clase; el token más nuevo de esa clase.
+  const lotes = new Map();
+  eventos.forEach((e, i) => {
+    const k = `${e.api}|${e.codigo}`;
+    const lote = lotes.get(k) ?? { api: e.api, codigo: e.codigo, token: e.token, claves: [], eventos: [] };
+    lote.token = e.token;
+    lote.claves.push(claves[i]);
+    lote.eventos.push({ estado: e.estado, tsClient: e.tsClient });
+    lotes.set(k, lote);
+  });
+
+  let pendiente = false;
+  for (const lote of lotes.values()) {
+    let res;
+    try {
+      res = await fetch(`${lote.api}/sesiones/${encodeURIComponent(lote.codigo)}/eventos-offline`, {
+        method: "POST",
+        headers: { "content-type": "application/json", authorization: `Bearer ${lote.token}` },
+        body: JSON.stringify({ eventos: lote.eventos.slice(-500) }),
+      });
+    } catch {
+      pendiente = true; // sigue sin red: queda para el próximo intento
+      continue;
+    }
+    if (res.status >= 500) {
+      pendiente = true;
+      continue;
+    }
+    // 2xx, o un 4xx que nunca va a andar (sesión inexistente, token vencido): se descarta.
+    const tx = db.transaction("eventos", "readwrite").objectStore("eventos");
+    await Promise.all(lote.claves.map((c) => pedido(tx.delete(c))));
+  }
+  // Con Background Sync, fallar hace que el navegador reintente más tarde.
+  if (pendiente) throw new Error("eventos offline pendientes");
+}
+
+self.addEventListener("sync", (event) => {
+  if (event.tag === TAG_SYNC) event.waitUntil(sincronizar());
+});
+
+self.addEventListener("message", (event) => {
+  if (event.data?.type === "encolar") event.waitUntil(encolar(event.data.evento));
+  if (event.data?.type === "sincronizar") event.waitUntil(sincronizar().catch(() => {}));
+});
+
 // Al tocar la notificación: enfoca una pestaña/ventana del ENS ya abierta
 // o abre la ruta indicada.
 self.addEventListener("notificationclick", (event) => {

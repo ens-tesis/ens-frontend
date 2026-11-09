@@ -57,7 +57,14 @@ export interface ParticipantesUpdateMessage {
   participantes: ParticipanteConectado[];
 }
 
-export type SesionWsMessage = WhitelistUpdateMessage | ParticipantesUpdateMessage;
+// Modo Contingencia: se cayó la red de la mayoría (ver contingencia.ts del backend).
+export interface ContingenciaUpdateMessage {
+  type: "contingencia_update";
+  sesionCodigo: string;
+  activa: boolean;
+}
+
+export type SesionWsMessage = WhitelistUpdateMessage | ParticipantesUpdateMessage | ContingenciaUpdateMessage;
 
 // Único mensaje que manda el cliente (alumno) hoy: reporte de foco de la
 // pestaña. Ver useSesionSocket.ts (enviarMensaje) y sesiones.ws.ts (backend).

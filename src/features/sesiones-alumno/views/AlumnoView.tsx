@@ -12,6 +12,7 @@ import { CLASE_FILA_INTERACTIVA, Tarjeta } from "@/shared/components/Tarjeta";
 import { getToken, useUsuarioActual } from "@/features/auth";
 import { mensajeDeCierre, useSesionSocket } from "@/shared/hooks/useSesionSocket";
 import { useSessionStorageInicial } from "@/shared/hooks/useSessionStorageInicial";
+import { encolarEventoOffline, sincronizarEventosOffline } from "@/shared/lib/eventosOffline";
 import { hostnameDe } from "@/shared/lib/url";
 import type { WhitelistUrl } from "@/shared/types/sesiones";
 import { VisorEmbebido } from "../components/VisorEmbebido";
@@ -114,19 +115,23 @@ export default function AlumnoView({ codigoQr }: { codigoQr: string | null }) {
   // Le avisa al backend cuando esta pestaña deja de estar en foco (u
   // vuelve) — ver "Fuera de Foco"/"Ausente Digital" en sesiones.ws.ts.
   // Solo tiene sentido reportarlo con el socket ya conectado.
+  // Sin conexión (wifi caído) el cambio de foco no se pierde: se encola y
+  // el Service Worker lo manda en lote al volver la red (Anexo D.3).
   useEffect(() => {
-    if (socket.estado !== "conectado") return;
+    if (!codigoConectado || !token) return;
+    const enLinea = socket.estado === "conectado";
+    const sinRed = socket.estado === "reconectando" || socket.estado === "conectando";
+    if (enLinea) sincronizarEventosOffline();
 
     function reportarFoco(): void {
-      enviarMensaje({
-        type: "presencia",
-        estado: document.hidden ? "fuera_de_foco" : "conectado",
-      });
+      const estado = document.hidden ? "fuera_de_foco" : "conectado";
+      if (enLinea) enviarMensaje({ type: "presencia", estado });
+      else if (sinRed) encolarEventoOffline(codigoConectado!, estado, token!);
     }
 
     document.addEventListener("visibilitychange", reportarFoco);
     return () => document.removeEventListener("visibilitychange", reportarFoco);
-  }, [socket.estado, enviarMensaje]);
+  }, [socket.estado, enviarMensaje, codigoConectado, token]);
 
   // Split-screen (anteproyecto C.2): si la ventana ocupa menos del 60% del
   // área de la pantalla (pantalla dividida, ventana flotante), se avisa.

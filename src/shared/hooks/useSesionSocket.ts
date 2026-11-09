@@ -25,6 +25,7 @@ interface UseSesionSocketResult {
   whitelist: WhitelistUrl[];
   participantes: ParticipanteConectado[];
   cierre: CierreWs | null;
+  contingencia: boolean;
   // true una vez que llegó al menos un mensaje del servidor (whitelist o
   // participantes vacíos son datos válidos, por eso hace falta esta bandera
   // en vez de inferirlo del largo de los arrays).
@@ -38,6 +39,7 @@ interface ManejadoresConexion {
   onEstado: (estado: EstadoConexionWs) => void;
   onWhitelist: (whitelist: WhitelistUrl[]) => void;
   onParticipantes: (participantes: ParticipanteConectado[]) => void;
+  onContingencia: (activa: boolean) => void;
   onMensajeRecibido: () => void;
   onCierre: (cierre: CierreWs) => void;
 }
@@ -145,6 +147,8 @@ function conectarSesionSocket(
         handlers.onWhitelist(mensaje.whitelist);
       } else if (mensaje.type === "participantes_update") {
         handlers.onParticipantes(mensaje.participantes);
+      } else if (mensaje.type === "contingencia_update") {
+        handlers.onContingencia(mensaje.activa);
       }
       handlers.onMensajeRecibido();
     };
@@ -194,6 +198,7 @@ export function useSesionSocket(
   const [whitelist, setWhitelist] = useState<WhitelistUrl[]>([]);
   const [participantes, setParticipantes] = useState<ParticipanteConectado[]>([]);
   const [cierre, setCierre] = useState<CierreWs | null>(null);
+  const [contingencia, setContingencia] = useState(false);
   const [sincronizado, setSincronizado] = useState(false);
   const [intento, setIntento] = useState(0);
   const socketRef = useRef<WebSocket>(undefined);
@@ -212,6 +217,7 @@ export function useSesionSocket(
           setWhitelist(guardada ?? []);
           setParticipantes([]);
           setCierre(null);
+          setContingencia(false);
           setSincronizado(false);
         },
         onEstado: setEstado,
@@ -220,6 +226,7 @@ export function useSesionSocket(
           setWhitelist(w);
         },
         onParticipantes: setParticipantes,
+        onContingencia: setContingencia,
         onMensajeRecibido: () => setSincronizado(true),
         onCierre: (c) => {
           // Cierre definitivo (clase finalizada, sin permiso...): esa
@@ -240,6 +247,7 @@ export function useSesionSocket(
     whitelist,
     participantes,
     cierre,
+    contingencia,
     sincronizado,
     reconectar: () => setIntento((i) => i + 1),
     enviarMensaje: (mensaje) => {

@@ -18,6 +18,7 @@ import { NotificacionesCampana } from "@/features/notificaciones";
 import { useCursos } from "@/features/reportes";
 import { CodigoSesion } from "../components/CodigoSesion";
 import { ParticipantesPanel } from "../components/ParticipantesPanel";
+import { RegistroClase, useRegistroClase } from "../components/RegistroClase";
 import { WhitelistPanel } from "../components/WhitelistPanel";
 
 // Igual que el JWT (ver session.ts): sessionStorage es una decisión de
@@ -26,7 +27,7 @@ import { WhitelistPanel } from "../components/WhitelistPanel";
 // varias pestañas del mismo docente en simultáneo.
 const CLAVE_SESION_ACTIVA = "ens_sesion_activa_codigo";
 
-type Seccion = "clase" | "alumnos" | "sitios";
+type Seccion = "clase" | "alumnos" | "registro" | "sitios";
 
 interface CrearSesionResponse {
   sesion: Sesion;
@@ -78,6 +79,7 @@ export default function DocenteView() {
 
   const token = getToken();
   const socket = useSesionSocket(codigoActivo, token);
+  const registro = useRegistroClase(codigoActivo, socket.participantes);
 
   const crearSesion = useMutation({
     mutationFn: () =>
@@ -108,12 +110,14 @@ export default function DocenteView() {
   const participantes = socket.sincronizado
     ? socket.participantes
     : (sesionQuery.data?.participantes ?? []);
+  const entradasRegistro = registro.data ?? [];
 
   // Sin clase activa no hay alumnos ni sitios que mostrar: una sola pantalla.
   const secciones: ItemNav<Seccion>[] = codigoActivo
     ? [
         { id: "clase", etiqueta: "Clase", icono: "clase" },
         { id: "alumnos", etiqueta: "Alumnos", icono: "alumnos", contador: participantes.length },
+        { id: "registro", etiqueta: "Registro", icono: "historial", contador: entradasRegistro.length },
         { id: "sitios", etiqueta: "Sitios", icono: "sitios", contador: whitelist.length },
       ]
     : [];
@@ -129,6 +133,10 @@ export default function DocenteView() {
     alumnos: {
       titulo: "Alumnos",
       descripcion: "Primero aparece quien necesita atención. Se actualiza solo, en tiempo real.",
+    },
+    registro: {
+      titulo: "Registro de la clase",
+      descripcion: "Todo lo que pasó en esta clase: distracciones, cortes y salidas, con cuánto duró cada uno.",
     },
     sitios: {
       titulo: "Sitios permitidos",
@@ -155,6 +163,15 @@ export default function DocenteView() {
           <Boton variante="sutil" onClick={socket.reconectar}>
             Reconectar
           </Boton>
+        </Tarjeta>
+      )}
+      {codigoActivo && socket.contingencia && (
+        <Tarjeta className="border-alerta/40 bg-alerta/15">
+          <p className="text-sm font-semibold text-carbon">Modo contingencia: se cayó la red del aula</p>
+          <p className="mt-1 text-sm text-carbon/75">
+            La mayoría de los alumnos perdió la conexión a la vez. Mientras dure no se generan alertas y nadie
+            queda como &quot;se fue&quot;: es un problema del wifi, no de ellos. Se reanuda solo cuando vuelve la red.
+          </p>
         </Tarjeta>
       )}
       {codigoActivo && sesionQuery.isError && (
@@ -247,6 +264,13 @@ export default function DocenteView() {
         </div>
       ) : vista === "alumnos" ? (
         <ParticipantesPanel participantes={participantes} cargando={!datosListos} />
+      ) : vista === "registro" ? (
+        <RegistroClase
+          entradas={entradasRegistro}
+          cargando={registro.isPending}
+          error={registro.isError}
+          participantes={participantes}
+        />
       ) : (
         <WhitelistPanel codigo={codigoActivo} whitelist={whitelist} cargando={!datosListos} />
       )}

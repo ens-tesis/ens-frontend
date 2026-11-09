@@ -10,7 +10,8 @@ export type TipoNotificacion =
   | "sin_red"
   | "desconectado"
   | "distracciones_reiteradas"
-  | "no_se_unio";
+  | "no_se_unio"
+  | "contingencia";
 
 export interface Notificacion {
   id: number;
@@ -29,6 +30,7 @@ export const TITULO_NOTIFICACION: Record<TipoNotificacion, string> = {
   desconectado: "Alumno desconectado",
   distracciones_reiteradas: "Distracciones reiteradas",
   no_se_unio: "No se unió a la clase",
+  contingencia: "Modo contingencia",
 };
 
 const CLAVE = ["notificaciones"];

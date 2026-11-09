@@ -4,7 +4,7 @@ import { useMutation, useQuery } from "@tanstack/react-query";
 import axios from "axios";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useSyncExternalStore } from "react";
 import { Boton } from "@/shared/components/Boton";
 import { Campo } from "@/shared/components/Campo";
 import { MensajeEstado } from "@/shared/components/MensajeEstado";
@@ -13,6 +13,7 @@ import { api } from "@/shared/api/client";
 import { rutaInicial } from "../services/rutaPorRol";
 import { clearToken, setToken, type Usuario } from "../services/session";
 import { useTokenInicial } from "../services/useTokenInicial";
+import { fueCancelado, ingresarConHuella, soportaHuella } from "../services/webauthn";
 
 interface LoginInput {
   email: string;
@@ -27,6 +28,8 @@ interface LoginResponse {
 interface MeResponse {
   usuario: Usuario;
 }
+
+const sinSuscripcion = () => () => {};
 
 function extraerMensajeError(err: unknown): string {
   if (axios.isAxiosError(err) && err.response?.data?.message) {
@@ -64,6 +67,16 @@ export default function LoginView() {
       router.push(rutaInicial(res.data.usuario));
     },
   });
+
+  const conHuella = useMutation({
+    mutationFn: ingresarConHuella,
+    onSuccess: (data) => {
+      setToken(data.token);
+      router.push(rutaInicial(data.usuario));
+    },
+  });
+  // Solo en el cliente: en el render del servidor no hay navigator.
+  const huellaDisponible = useSyncExternalStore(sinSuscripcion, soportaHuella, () => false);
 
   if (tokenInicial && sesionExistente.isPending) {
     return (
@@ -110,6 +123,22 @@ export default function LoginView() {
             Ingresar
           </Boton>
         </form>
+
+        {huellaDisponible && (
+          <div className="space-y-2">
+            <Boton
+              variante="sutil"
+              className="w-full"
+              cargando={conHuella.isPending}
+              onClick={() => conHuella.mutate()}
+            >
+              Entrar con huella (alumnos)
+            </Boton>
+            {conHuella.isError && !fueCancelado(conHuella.error) && (
+              <MensajeEstado tipo="error">{extraerMensajeError(conHuella.error)}</MensajeEstado>
+            )}
+          </div>
+        )}
 
         <p className="text-center text-sm text-carbon/70">
           ¿No tenés cuenta?{" "}

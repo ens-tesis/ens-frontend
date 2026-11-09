@@ -15,6 +15,7 @@ import { useSessionStorageInicial } from "@/shared/hooks/useSessionStorageInicia
 import { encolarEventoOffline, sincronizarEventosOffline } from "@/shared/lib/eventosOffline";
 import { hostnameDe } from "@/shared/lib/url";
 import type { WhitelistUrl } from "@/shared/types/sesiones";
+import { ActivarHuella } from "../components/ActivarHuella";
 import { VisorEmbebido } from "../components/VisorEmbebido";
 
 // Ver la misma nota en sesiones-docente/views/DocenteView.tsx sobre sessionStorage.
@@ -233,6 +234,7 @@ export default function AlumnoView({ codigoQr }: { codigoQr: string | null }) {
       }
     >
       {!codigoConectado ? (
+        <div className="space-y-5">
         <form
           onSubmit={conectar}
           className="pizarron max-w-md space-y-5 rounded-[2rem] p-6 text-arena shadow-flotante sm:p-8"
@@ -255,6 +257,8 @@ export default function AlumnoView({ codigoQr }: { codigoQr: string | null }) {
             Unirme a la clase
           </Boton>
         </form>
+        <ActivarHuella />
+        </div>
       ) : socket.estado === "conectando" ? (
         <Tarjeta>
           <MensajeEstado tipo="cargando">Conectando a la clase {codigoConectado}...</MensajeEstado>

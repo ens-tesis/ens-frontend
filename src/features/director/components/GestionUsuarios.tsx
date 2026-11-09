@@ -45,6 +45,12 @@ export function GestionUsuarios({ actor }: { actor: Usuario }) {
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ["usuarios"] }),
   });
 
+  // Alumno que cambió o perdió el celular: vuelve a entrar con contraseña.
+  const quitarHuella = useMutation({
+    mutationFn: (id: number) => api.delete(`/admin/usuarios/${id}/passkeys`),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["usuarios"] }),
+  });
+
   const rolesAsignables = ROLES.filter((r) => esRolInferior(r, actor.rol));
 
   return (
@@ -105,12 +111,24 @@ export function GestionUsuarios({ actor }: { actor: Usuario }) {
                       {u.apellido ? `${u.apellido}, ` : ""}
                       {u.nombre}
                       {inactivo && <Badge variante="rojo">Inactivo</Badge>}
+                      {u.tienePasskey && <Badge variante="verde">Huella</Badge>}
                     </p>
                     <p className="truncate text-xs text-carbon/60">{u.email}</p>
                   </div>
                 </div>
                 {editable ? (
                   <div className="flex items-center gap-2">
+                    {u.tienePasskey && (
+                      <button
+                        type="button"
+                        title="Borra la huella registrada: el alumno vuelve a entrar con su contraseña"
+                        disabled={quitarHuella.isPending}
+                        onClick={() => quitarHuella.mutate(u.id)}
+                        className="min-h-11 shrink-0 rounded-xl border border-carbon/15 px-3 text-sm font-semibold text-carbon hover:border-carbon/40 focus-visible:outline focus-visible:outline-2 focus-visible:outline-carbon"
+                      >
+                        Quitar huella
+                      </button>
+                    )}
                     <select
                       aria-label={`Rol de ${u.email}`}
                       value={u.rol}

@@ -13,5 +13,7 @@ export interface Usuario {
   activo?: boolean;
   // Alumno precargado que todavía no cambió su contraseña inicial.
   debeCambiarPassword?: boolean;
+  // Solo en el listado de gestión: alumno con huella registrada.
+  tienePasskey?: boolean;
   createdAt: string;
 }

@@ -160,7 +160,12 @@ export function VisorEmbebido({ item, src, onVolver }: VisorEmbebidoProps) {
             //   alumno del ENS.
             sandbox={
               item.modo === "directo"
-                ? "allow-scripts allow-same-origin allow-popups allow-forms allow-popups-to-escape-sandbox allow-presentation"
+                ? // Sin allow-popups (lo tuvo hasta 2026-11-10): un link con
+                  // target="_blank" dentro del sitio (el "Iniciar sesión" de
+                  // Google Forms, "Ver en YouTube", el logo de Canva) abría
+                  // una pestaña nueva y sacaba al alumno del ENS. Sin ese
+                  // permiso el navegador simplemente no la abre.
+                  "allow-scripts allow-same-origin allow-forms allow-presentation"
                 : item.modo === "proxy_sesion"
                   ? "allow-scripts allow-same-origin allow-forms allow-modals allow-downloads"
                   : item.modo === "proxy_general"

@@ -9,6 +9,17 @@ export function hostnameDe(url: string): string {
   }
 }
 
+// Un archivo subido por el docente viaja en la whitelist como
+// "archivo://<id>" (ver archivos.repository.ts del backend).
+export function urlDeArchivo(id: number): string {
+  return `archivo://${id}`;
+}
+
+export function idDeArchivo(url: string): number | null {
+  const match = /^archivo:\/\/(\d+)$/.exec(url);
+  return match ? Number(match[1]) : null;
+}
+
 // Lo que se muestra de un sitio: el nombre que le puso el docente o, si no
 // tiene, el dominio.
 export function tituloDe(item: { url: string; nombre: string | null }): string {

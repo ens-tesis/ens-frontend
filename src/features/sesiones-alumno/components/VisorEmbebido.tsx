@@ -7,6 +7,7 @@ import { IconoModo } from "@/shared/components/IconoModo";
 import { MensajeEstado } from "@/shared/components/MensajeEstado";
 import { tituloDe } from "@/shared/lib/url";
 import type { WhitelistUrl } from "@/shared/types/sesiones";
+import { VisorArchivo } from "./VisorArchivo";
 
 // Heurística, no detección exacta — y ya sabíamos que era floja (muchos
 // bloqueos por X-Frame-Options/CSP igual disparan `onLoad`, el navegador
@@ -45,6 +46,8 @@ export function VisorEmbebido({ item, src, onVolver }: VisorEmbebidoProps) {
   // que cada URL nueva es un montaje nuevo: no hace falta resetear
   // `cargada`/`fallo` a mano, arrancan limpios solos.
   useEffect(() => {
+    // Un archivo no es un iframe: VisorArchivo maneja su propia carga/error.
+    if (item.modo === "archivo") return;
     const timeout = item.modo === "directo" ? TIMEOUT_CARGA_MS : TIMEOUT_MIRROR_MS;
     timerRef.current = setTimeout(() => setFallo(true), timeout);
     return () => clearTimeout(timerRef.current);
@@ -64,7 +67,10 @@ export function VisorEmbebido({ item, src, onVolver }: VisorEmbebidoProps) {
           <IconoModo modo={item.modo} className="size-4 shrink-0 text-carbon/50" />
           <span className="truncate text-sm font-medium text-carbon">{tituloDe(item)}</span>
           {item.modo === "mirror" && <Badge variante="celeste">Lectura</Badge>}
-          {item.modo === "proxy_general" && <Badge variante="verde">Bloqueo real</Badge>}
+          {(item.modo === "proxy_general" || item.modo === "proxy_sesion") && (
+            <Badge variante="verde">Bloqueo real</Badge>
+          )}
+          {item.modo === "archivo" && <Badge variante="celeste">Archivo</Badge>}
         </div>
         <Boton variante="sutil" onClick={onVolver} className="shrink-0">
           Volver
@@ -84,6 +90,10 @@ export function VisorEmbebido({ item, src, onVolver }: VisorEmbebidoProps) {
         </div>
       ) : (
         <div className="relative min-h-0 flex-1">
+          {item.modo === "archivo" ? (
+            <VisorArchivo url={item.url} nombre={tituloDe(item)} />
+          ) : (
+          <>
           {!cargada && (
             <div className="absolute inset-0 z-10 flex items-center justify-center rounded-2xl border border-carbon/[0.07] bg-white">
               <MensajeEstado tipo="cargando">Cargando...</MensajeEstado>
@@ -138,15 +148,29 @@ export function VisorEmbebido({ item, src, onVolver }: VisorEmbebidoProps) {
             //   token — ver el resto del plan de RF-04 — solo cierra la
             //   capacidad nueva que introducía este sandbox: llamadas
             //   autenticadas de vuelta a nuestra propia API.)
+            // - "proxy_sesion": el sitio real completo servido desde nuestro
+            //   backend (ver proxySesion.ts). A diferencia de proxy_general
+            //   SÍ lleva allow-same-origin y allow-forms: es un sitio con
+            //   login (Moodle) que necesita formularios y storage propio.
+            //   Es aceptable porque acá la URL del iframe no lleva el JWT
+            //   del alumno sino un sid que solo sirve para el proxy, y el
+            //   origen del backend no guarda nada nuestro (el JWT vive en
+            //   el storage del frontend, otro origen). Sin allow-popups ni
+            //   allow-top-navigation: no puede abrir ventanas ni sacar al
+            //   alumno del ENS.
             sandbox={
               item.modo === "directo"
                 ? "allow-scripts allow-same-origin allow-popups allow-forms allow-popups-to-escape-sandbox allow-presentation"
-                : item.modo === "proxy_general"
-                  ? "allow-scripts"
-                  : ""
+                : item.modo === "proxy_sesion"
+                  ? "allow-scripts allow-same-origin allow-forms allow-modals allow-downloads"
+                  : item.modo === "proxy_general"
+                    ? "allow-scripts"
+                    : ""
             }
             allow={item.modo === "directo" ? "fullscreen; clipboard-write; picture-in-picture" : undefined}
           />
+          </>
+          )}
         </div>
       )}
     </div>

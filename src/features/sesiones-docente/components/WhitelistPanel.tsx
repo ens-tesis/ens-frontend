@@ -13,6 +13,7 @@ import { CLASE_FILA, Tarjeta } from "@/shared/components/Tarjeta";
 import { api } from "@/shared/api/client";
 import { hostnameDe, tituloDe } from "@/shared/lib/url";
 import type { LinkReciente, WhitelistUrl } from "@/shared/types/sesiones";
+import { ArchivosDocente } from "./ArchivosDocente";
 import { useLinksFijos } from "./LinksFijos";
 
 interface WhitelistPanelProps {
@@ -31,6 +32,7 @@ interface UrlNoEmbebibleBody {
   message: string;
   sugerenciaEmbed?: string;
   mirrorDisponible?: boolean;
+  ayuda?: string;
 }
 
 interface AgregarInput {
@@ -44,6 +46,8 @@ interface Bloqueo {
   nombre: string | null;
   sugerenciaEmbed: string | null;
   mirrorDisponible: boolean;
+  // Explicación del backend de qué link sí sirve (ej. Canva).
+  ayuda: string | null;
 }
 
 function leerBloqueo(err: unknown): Bloqueo | null {
@@ -55,6 +59,7 @@ function leerBloqueo(err: unknown): Bloqueo | null {
     nombre: null,
     sugerenciaEmbed: body.sugerenciaEmbed ?? null,
     mirrorDisponible: Boolean(body.mirrorDisponible),
+    ayuda: body.ayuda ?? null,
   };
 }
 
@@ -186,10 +191,13 @@ export function WhitelistPanel({ codigo, whitelist, cargando, curso }: Whitelist
               </Boton>
             </div>
           ) : (
-            <p className="text-sm text-carbon/70">
-              No encontramos una alternativa para este sitio — probá con otro recurso.
-            </p>
+            !bloqueo.ayuda && (
+              <p className="text-sm text-carbon/70">
+                No encontramos una alternativa para este sitio — probá con otro recurso.
+              </p>
+            )
           )}
+          {bloqueo.ayuda && <p className="text-sm text-carbon/80">{bloqueo.ayuda}</p>}
         </div>
       ) : (
         agregar.isError && (
@@ -217,12 +225,17 @@ export function WhitelistPanel({ codigo, whitelist, cargando, curso }: Whitelist
                       <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
                         <span className="truncate text-sm font-medium text-carbon">{tituloDe(item)}</span>
                         {item.modo === "mirror" && <Badge variante="celeste">Lectura</Badge>}
-                        {item.modo === "proxy_general" && <Badge variante="verde">Bloqueo real</Badge>}
+                        {(item.modo === "proxy_general" || item.modo === "proxy_sesion") && (
+                          <Badge variante="verde">Bloqueo real</Badge>
+                        )}
+                        {item.modo === "archivo" && <Badge variante="celeste">Archivo</Badge>}
                         {fijo && <Badge variante="ambar">Fijo · {fijo.curso ?? "todos los cursos"}</Badge>}
                       </div>
-                      <p className="truncate text-xs text-carbon/55" title={item.url}>
-                        {item.url}
-                      </p>
+                      {item.modo !== "archivo" && (
+                        <p className="truncate text-xs text-carbon/55" title={item.url}>
+                          {item.url}
+                        </p>
+                      )}
                     </div>
                   </div>
                   <div className="grid shrink-0 grid-cols-2 gap-2 sm:flex">
@@ -287,6 +300,8 @@ export function WhitelistPanel({ codigo, whitelist, cargando, curso }: Whitelist
           })}
         </ul>
       )}
+      <ArchivosDocente codigo={codigo} whitelist={whitelist} />
+
       {fijos.fijar.isError && (
         <MensajeEstado tipo="error">{extraerMensajeError(fijos.fijar.error)}</MensajeEstado>
       )}

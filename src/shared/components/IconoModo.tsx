@@ -1,5 +1,7 @@
+import type { WhitelistUrl } from "@/shared/types/sesiones";
+
 interface IconoModoProps {
-  modo: "directo" | "mirror" | "proxy_general";
+  modo: WhitelistUrl["modo"];
   className?: string;
 }
 
@@ -10,7 +12,21 @@ interface IconoModoProps {
 // real de navegación, no solo lectura). currentColor: hereda el color de
 // texto de donde se use, no inventa un tono nuevo fuera de la paleta.
 export function IconoModo({ modo, className }: IconoModoProps) {
-  if (modo === "proxy_general") {
+  if (modo === "archivo") {
+    return (
+      <svg viewBox="0 0 20 20" fill="none" className={className} aria-hidden="true">
+        <path
+          d="M11.5 3h-5A1.5 1.5 0 0 0 5 4.5v11A1.5 1.5 0 0 0 6.5 17h7a1.5 1.5 0 0 0 1.5-1.5v-9zM11.5 3v3.5H15"
+          stroke="currentColor"
+          strokeWidth="1.4"
+          strokeLinejoin="round"
+        />
+      </svg>
+    );
+  }
+  // "proxy_sesion" comparte el escudo: también es el sitio real servido a
+  // través de nuestro backend.
+  if (modo === "proxy_general" || modo === "proxy_sesion") {
     return (
       <svg viewBox="0 0 20 20" fill="none" className={className} aria-hidden="true">
         <path

@@ -26,7 +26,7 @@ export interface WhitelistUrl {
   nombre: string | null;
   agregadoPor: number;
   activo: boolean;
-  modo: "directo" | "mirror" | "proxy_general";
+  modo: "directo" | "mirror" | "proxy_general" | "proxy_sesion" | "archivo";
   createdAt: string;
   removedAt: string | null;
 }

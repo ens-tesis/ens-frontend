@@ -88,7 +88,8 @@ export default function AlumnoView({ codigoQr }: { codigoQr: string | null }) {
   }
 
   function abrirUrl(item: WhitelistUrl): void {
-    if (!esAbribleEnIframe(item.url)) {
+    // Un archivo no se abre en un iframe (ver VisorArchivo): no aplica el chequeo.
+    if (item.modo !== "archivo" && !esAbribleEnIframe(item.url)) {
       setAvisoRevocado("Esa URL no se puede abrir.");
       return;
     }
@@ -106,9 +107,13 @@ export default function AlumnoView({ codigoQr }: { codigoQr: string | null }) {
   // servirse desde nuestro origen, con su JS/CSS intactos, vía
   // /mirror/pagina (ver reescritorHtml.ts).
   function srcDe(item: WhitelistUrl): string {
-    if (item.modo === "directo") return item.url;
+    // "archivo" no usa src (lo dibuja VisorArchivo): se devuelve tal cual.
+    if (item.modo === "directo" || item.modo === "archivo") return item.url;
     const apiUrl = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:3001";
-    const ruta = item.modo === "proxy_general" ? "mirror/pagina" : "mirror";
+    // "proxy_sesion": el sitio real completo (login incluido) a través de
+    // /px — /px/abrir cambia el token por un sid de proxy y redirige.
+    const ruta =
+      item.modo === "proxy_sesion" ? "px/abrir" : item.modo === "proxy_general" ? "mirror/pagina" : "mirror";
     const params = new URLSearchParams({ url: item.url, token: token ?? "" });
     return `${apiUrl}/${ruta}?${params.toString()}`;
   }
@@ -323,12 +328,14 @@ export default function AlumnoView({ codigoQr }: { codigoQr: string | null }) {
                       <span className="block truncate text-sm font-semibold text-carbon">
                         {tituloDe(item)}
                       </span>
-                      <Badge variante={item.modo === "mirror" ? "celeste" : "verde"}>
+                      <Badge variante={item.modo === "mirror" || item.modo === "archivo" ? "celeste" : "verde"}>
                         {item.modo === "mirror"
                           ? "Lectura"
-                          : item.modo === "proxy_general"
-                            ? "Bloqueo real"
-                            : "Permitido"}
+                          : item.modo === "archivo"
+                            ? "Archivo"
+                            : item.modo === "proxy_general" || item.modo === "proxy_sesion"
+                              ? "Bloqueo real"
+                              : "Permitido"}
                       </Badge>
                     </span>
                   </button>

@@ -51,9 +51,8 @@ const SECCIONES: (ItemNav<Seccion> & { descripcion: string })[] = [
   },
 ];
 
-// Admin entra a la misma pantalla: tiene todo lo del director y más.
 export default function DirectorView() {
-  const { cargando, usuario } = useGuardRol(["director", "admin"]);
+  const { cargando, usuario } = useGuardRol(["director"]);
   const cursos = useCursos(Boolean(usuario));
   const [seccion, setSeccion] = useState<Seccion>("metricas");
 
@@ -64,7 +63,7 @@ export default function DirectorView() {
 
   return (
     <AppShell
-      area={usuario.rol === "admin" ? "Administración" : "Dirección"}
+      area="Dirección"
       usuario={usuario}
       secciones={SECCIONES}
       activa={seccion}

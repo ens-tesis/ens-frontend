@@ -6,10 +6,11 @@ export function rutaInicial(usuario: Usuario): string {
   return usuario.debeCambiarPassword ? "/cambiar-password" : rutaPorRol(usuario.rol);
 }
 
-// Pantalla principal de cada rol. Admin comparte la del director.
+// Pantalla principal de cada rol. El admin no tiene colegio: gestiona colegios.
 export function rutaPorRol(rol: Rol): string {
   if (rol === "docente") return "/docente";
   if (rol === "alumno") return "/alumno";
   if (rol === "preceptor") return "/preceptor";
+  if (rol === "admin") return "/colegios";
   return "/director";
 }

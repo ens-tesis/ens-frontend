@@ -3,14 +3,14 @@
 import { useState } from "react";
 import { useGuardRol } from "@/features/auth";
 import { NotificacionesCampana } from "@/features/notificaciones";
-import { Historial, useCursos } from "@/features/reportes";
+import { Asistencia, Historial, useCursos } from "@/features/reportes";
 import { AppShell, PantallaCargando, type ItemNav } from "@/shared/components/AppShell";
 import { GestionCursos } from "../components/GestionCursos";
 import { GestionUsuarios } from "../components/GestionUsuarios";
 import { ImportarSie } from "../components/ImportarSie";
 import { Metricas } from "../components/Metricas";
 
-type Seccion = "metricas" | "historial" | "cursos" | "usuarios" | "importar";
+type Seccion = "metricas" | "asistencia" | "historial" | "cursos" | "usuarios" | "importar";
 
 const SECCIONES: (ItemNav<Seccion> & { descripcion: string })[] = [
   {
@@ -18,6 +18,12 @@ const SECCIONES: (ItemNav<Seccion> & { descripcion: string })[] = [
     etiqueta: "Métricas",
     icono: "metricas",
     descripcion: "Uso del ENS por curso o por docente. Filtrá por fechas y exportá a Excel.",
+  },
+  {
+    id: "asistencia",
+    etiqueta: "Asistencia",
+    icono: "asistencia",
+    descripcion: "Por clase: quién se conectó, quién faltó y quién llegó tarde o no se quedó conectado.",
   },
   {
     id: "historial",
@@ -68,6 +74,7 @@ export default function DirectorView() {
       acciones={<NotificacionesCampana />}
     >
       {seccion === "metricas" && <Metricas />}
+      {seccion === "asistencia" && cursos.data && <Asistencia cursos={cursos.data} />}
       {seccion === "historial" && <Historial cursos={cursos.data ?? []} />}
       {seccion === "cursos" && <GestionCursos />}
       {seccion === "usuarios" && <GestionUsuarios actor={usuario} />}

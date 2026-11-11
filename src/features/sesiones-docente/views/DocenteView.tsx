@@ -15,7 +15,7 @@ import type { EstadoPresencia, Sesion, SesionCompleta } from "@/shared/types/ses
 import { useSesionSocket } from "@/shared/hooks/useSesionSocket";
 import { useSessionStorageInicial } from "@/shared/hooks/useSessionStorageInicial";
 import { NotificacionesCampana } from "@/features/notificaciones";
-import { useCursos } from "@/features/reportes";
+import { Asistencia, useAsistencia, useCursos } from "@/features/reportes";
 import { CodigoSesion } from "../components/CodigoSesion";
 import { LinksFijos } from "../components/LinksFijos";
 import { ParticipantesPanel } from "../components/ParticipantesPanel";
@@ -31,7 +31,7 @@ const CLAVE_SESION_ACTIVA = "ens_sesion_activa_codigo";
 // Igual que el default de la base (migración 020) para clases sin curso.
 const UMBRAL_DISTRACCIONES_DEFAULT = 3;
 
-type Seccion = "clase" | "alumnos" | "registro" | "sitios";
+type Seccion = "clase" | "alumnos" | "registro" | "sitios" | "asistencia";
 
 interface CrearSesionResponse {
   sesion: Sesion;
@@ -84,10 +84,12 @@ export default function DocenteView() {
   const token = getToken();
   const socket = useSesionSocket(codigoActivo, token);
   const registro = useRegistroClase(codigoActivo, socket.participantes);
+  // Matriculados del curso de la clase en vivo, para ver quién falta.
+  const planillaCurso = useAsistencia(codigoActivo ? (sesionQuery.data?.sesion.cursoId ?? null) : null);
 
   const crearSesion = useMutation({
     mutationFn: () =>
-      api.post<CrearSesionResponse>("/sesiones", { cursoId: cursoId ? Number(cursoId) : null }),
+      api.post<CrearSesionResponse>("/sesiones", { cursoId: Number(cursoId) }),
     onSuccess: (res) => {
       const { codigo } = res.data.sesion;
       window.sessionStorage.setItem(CLAVE_SESION_ACTIVA, codigo);
@@ -116,17 +118,23 @@ export default function DocenteView() {
     : (sesionQuery.data?.participantes ?? []);
   const entradasRegistro = registro.data ?? [];
   const cursoDeLaClase = cursos.data?.find((c) => c.id === sesionQuery.data?.sesion.cursoId);
+  const faltan = (planillaCurso.data?.alumnos ?? []).filter(
+    (a) => a.matriculado && !participantes.some((p) => p.alumnoId === a.id),
+  );
 
-  // Sin clase activa no hay alumnos ni sitios que mostrar: una sola pantalla.
+  // Sin clase activa no hay alumnos ni sitios que mostrar: solo la nueva
+  // clase y la planilla de asistencia.
+  const asistencia: ItemNav<Seccion> = { id: "asistencia", etiqueta: "Asistencia", icono: "asistencia" };
   const secciones: ItemNav<Seccion>[] = codigoActivo
     ? [
         { id: "clase", etiqueta: "Clase", icono: "clase" },
         { id: "alumnos", etiqueta: "Alumnos", icono: "alumnos", contador: participantes.length },
         { id: "registro", etiqueta: "Registro", icono: "historial", contador: entradasRegistro.length },
         { id: "sitios", etiqueta: "Sitios", icono: "sitios", contador: whitelist.length },
+        asistencia,
       ]
-    : [];
-  const vista: Seccion = codigoActivo ? seccion : "clase";
+    : [{ id: "clase", etiqueta: "Nueva clase", icono: "clase" }, asistencia];
+  const vista: Seccion = codigoActivo || seccion === "asistencia" ? seccion : "clase";
 
   const encabezado: Record<Seccion, { titulo: string; descripcion: string }> = {
     clase: codigoActivo
@@ -146,6 +154,10 @@ export default function DocenteView() {
     sitios: {
       titulo: "Sitios permitidos",
       descripcion: "Lo único que tus alumnos pueden abrir durante la clase.",
+    },
+    asistencia: {
+      titulo: "Asistencia",
+      descripcion: "Tus clases por curso: quién se conectó, quién faltó y quién llegó tarde o no se quedó conectado.",
     },
   };
 
@@ -183,14 +195,18 @@ export default function DocenteView() {
         <MensajeEstado tipo="error">No se pudo cargar la información de la clase.</MensajeEstado>
       )}
 
-      {!codigoActivo ? (
+      {vista === "asistencia" ? (
+        <Asistencia cursos={cursos.data ?? []} />
+      ) : !codigoActivo ? (
         <div className="space-y-4">
         <section className="pizarron max-w-xl space-y-5 rounded-[2rem] p-6 text-arena shadow-flotante sm:p-8">
           <p className="font-display text-2xl font-bold sm:text-3xl">¿Con qué curso das clase?</p>
           <label className="block space-y-1.5">
             <span className={`${CLASE_ETIQUETA} text-arena/80`}>Curso</span>
             <select value={cursoId} onChange={(e) => setCursoId(e.target.value)} className={CLASE_CONTROL}>
-              <option value="">Sin curso</option>
+              <option value="" disabled>
+                Elegí un curso
+              </option>
               {(cursos.data ?? []).map((c) => (
                 <option key={c.id} value={c.id}>
                   {c.nombre} ({c.anioLectivo})
@@ -198,7 +214,12 @@ export default function DocenteView() {
               ))}
             </select>
           </label>
-          <Boton cargando={crearSesion.isPending} onClick={() => crearSesion.mutate()} className="w-full sm:w-auto">
+          <Boton
+            cargando={crearSesion.isPending}
+            disabled={!cursoId}
+            onClick={() => crearSesion.mutate()}
+            className="w-full sm:w-auto"
+          >
             Empezar clase
           </Boton>
           {crearSesion.isError && (
@@ -271,12 +292,22 @@ export default function DocenteView() {
           </Tarjeta>
         </div>
       ) : vista === "alumnos" ? (
-        <ParticipantesPanel
-          participantes={participantes}
-          cargando={!datosListos}
-          entradas={entradasRegistro}
-          umbral={cursoDeLaClase?.umbralDistracciones ?? UMBRAL_DISTRACCIONES_DEFAULT}
-        />
+        <div className="space-y-4">
+          {faltan.length > 0 && (
+            <Tarjeta className="space-y-2">
+              <p className="text-sm font-semibold text-carbon">Faltan conectarse ({faltan.length})</p>
+              <p className="text-sm text-carbon/70">
+                {faltan.map((a) => `${a.apellido}, ${a.nombre}`).join(" · ")}
+              </p>
+            </Tarjeta>
+          )}
+          <ParticipantesPanel
+            participantes={participantes}
+            cargando={!datosListos}
+            entradas={entradasRegistro}
+            umbral={cursoDeLaClase?.umbralDistracciones ?? UMBRAL_DISTRACCIONES_DEFAULT}
+          />
+        </div>
       ) : vista === "registro" ? (
         <RegistroClase
           entradas={entradasRegistro}

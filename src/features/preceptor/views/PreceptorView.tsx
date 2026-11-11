@@ -5,16 +5,22 @@ import { useState } from "react";
 import { useGuardRol } from "@/features/auth";
 import { GestionCursos } from "@/features/director";
 import { NotificacionesCampana } from "@/features/notificaciones";
-import { Historial, HistorialAlumno, useCursos, type Curso, type PersonaResumen } from "@/features/reportes";
+import { Asistencia, Historial, HistorialAlumno, useCursos, type Curso, type PersonaResumen } from "@/features/reportes";
 import { api } from "@/shared/api/client";
 import { AppShell, PantallaCargando, type ItemNav } from "@/shared/components/AppShell";
 import { Icono } from "@/shared/components/Icono";
 import { MensajeEstado } from "@/shared/components/MensajeEstado";
 import { CLASE_FILA, Tarjeta } from "@/shared/components/Tarjeta";
 
-type Seccion = "historial" | "cursos" | "gestion" | "alta";
+type Seccion = "asistencia" | "historial" | "cursos" | "gestion" | "alta";
 
 const SECCIONES: (ItemNav<Seccion> & { descripcion: string })[] = [
+  {
+    id: "asistencia",
+    etiqueta: "Asistencia",
+    icono: "asistencia",
+    descripcion: "Por clase: quién se conectó, quién faltó y quién llegó tarde o no se quedó conectado.",
+  },
   {
     id: "historial",
     etiqueta: "Historial",
@@ -77,7 +83,7 @@ function AlumnosDelCurso({
 export default function PreceptorView() {
   const { cargando, usuario } = useGuardRol(["preceptor"]);
   const cursos = useCursos(Boolean(usuario));
-  const [seccion, setSeccion] = useState<Seccion>("historial");
+  const [seccion, setSeccion] = useState<Seccion>("asistencia");
   const [cursoAbierto, setCursoAbierto] = useState<number | null>(null);
   const [alumno, setAlumno] = useState<PersonaResumen | null>(null);
 
@@ -112,6 +118,8 @@ export default function PreceptorView() {
             Todavía no tenés cursos. Creá uno en &quot;Gestionar cursos&quot; o pedile a la dirección que te asigne.
           </MensajeEstado>
         </Tarjeta>
+      ) : seccion === "asistencia" ? (
+        <Asistencia cursos={cursos.data} />
       ) : seccion === "historial" ? (
         <Historial cursos={cursos.data} />
       ) : alumno ? (

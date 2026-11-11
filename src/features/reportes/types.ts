@@ -72,3 +72,17 @@ export interface Periodo {
   desde: string;
   hasta: string;
 }
+
+export interface PlanillaAsistencia {
+  umbralDistracciones: number;
+  clases: { id: number; codigo: string; iniciadaAt: string; activa: boolean; docente: string }[];
+  alumnos: { id: number; nombre: string; apellido: string; matriculado: boolean }[];
+  // Solo las clases a las que el alumno entró; sin fila = no se conectó.
+  participaciones: {
+    sesionId: number;
+    alumnoId: number;
+    minutosDesdeInicio: number;
+    // Vacío = presente sin infracciones (los arma el backend).
+    motivos: string[];
+  }[];
+}

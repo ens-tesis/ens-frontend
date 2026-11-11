@@ -1,4 +1,5 @@
 import type { ReactNode } from "react";
+import { LogoPalabra } from "@/shared/components/Logo";
 import { BotonInstalar } from "@/shared/pwa/BotonInstalar";
 
 // Muestra de cómo se ve una clase en el ENS: lo que hace el producto,
@@ -15,17 +16,9 @@ export function PantallaAuth({ titulo, children }: { titulo: string; children: R
   return (
     <div className="flex min-h-dvh flex-1 flex-col lg:flex-row">
       <section className="pizarron relative flex flex-col justify-between gap-8 overflow-hidden rounded-b-[2rem] px-6 pt-[calc(env(safe-area-inset-top)+1.5rem)] pb-8 text-arena lg:w-[46%] lg:rounded-none lg:p-12">
-        <span className="flex items-center gap-2.5">
-          <span
-            aria-hidden="true"
-            className="grid size-10 place-items-center rounded-xl bg-violeta font-display text-lg font-bold text-carbon"
-          >
-            e
-          </span>
-          <span className="leading-tight">
-            <span className="block font-display text-xl font-bold">ENS</span>
-            <span className="block text-xs text-arena/65">Entorno de Navegación Supervisado</span>
-          </span>
+        <span className="block space-y-2">
+          <LogoPalabra className="h-11 w-auto lg:h-14" titulo="ENS — Entorno de Navegación Supervisado" />
+          <span className="block text-xs text-arena/65">Entorno de Navegación Supervisado</span>
         </span>
 
         <div className="space-y-8">

@@ -1,0 +1,4 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024"><rect width="1024" height="1024" rx="224" fill="#14342b"/><g transform="translate(512 512) scale(0.68) translate(35 330)">
+  <path d="M40 -606 Q-295 -610 -536 -330 Q-295 -50 40 -54" fill="none" stroke="#eae2b7" stroke-width="120" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="M40 -470 A140 140 0 0 0 40 -190 Z" fill="#ca73e4"/>
+  <path d="M40 0V-660H220V0ZM161 0V-150H512V0ZM161 -265V-400H466V-265ZM161 -510V-660H512V-510Z" fill="#eae2b7"/></g></svg>

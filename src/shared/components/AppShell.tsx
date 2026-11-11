@@ -7,6 +7,7 @@ import { useState, type ReactNode } from "react";
 import { clearToken } from "../auth/token";
 import { BotonInstalar } from "../pwa/BotonInstalar";
 import { Icono, type NombreIcono } from "./Icono";
+import { LogoMarca, LogoPalabra } from "./Logo";
 
 export interface ItemNav<T extends string> {
   id: T;
@@ -52,23 +53,13 @@ function useCerrarSesion() {
   };
 }
 
+// Compacta (barra de arriba en mobile): solo el medio ojo y la E.
 function Marca({ compacta = false }: { compacta?: boolean }) {
+  if (compacta) return <LogoMarca className="h-8 w-auto text-verde" />;
   return (
-    <span className="flex items-center gap-2.5">
-      <span
-        aria-hidden="true"
-        className="grid size-9 place-items-center rounded-xl bg-violeta font-display text-base font-bold text-carbon"
-      >
-        e
-      </span>
-      {!compacta && (
-        <span className="leading-tight">
-          <span className="block font-display text-lg font-bold">ENS</span>
-          <span className="block text-[11px] font-medium tracking-wide opacity-70">
-            Navegación supervisada
-          </span>
-        </span>
-      )}
+    <span className="block space-y-1.5">
+      <LogoPalabra className="h-9 w-auto" />
+      <span className="block text-[11px] font-medium tracking-wide opacity-70">Navegación supervisada</span>
     </span>
   );
 }

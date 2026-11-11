@@ -1,1 +1,6 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><rect width="512" height="512" rx="96" fill="#14342b"/><text x="256" y="320" font-family="Arial, Helvetica, sans-serif" font-size="190" font-weight="700" text-anchor="middle" fill="#eae2b7">ENS</text></svg>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024"><rect width="1024" height="1024" rx="224" fill="#14342b"/><g transform="translate(512 512) scale(0.6) translate(35 330)">
+  <path d="M40 -616 Q-295 -618 -536 -330 Q-295 -42 40 -44" fill="none" stroke="#eae2b7" stroke-width="92" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="M40 -519 A189 189 0 0 0 40 -141" fill="none" stroke="#eae2b7" stroke-width="50"/>
+  <path d="M40 -442 A112 112 0 0 0 40 -218 Z" fill="#ca73e4"/>
+  <circle cx="-28" cy="-388" r="27" fill="#ffffff"/>
+  <path d="M40 0V-660H202V0ZM161 0V-135H512V0ZM161 -272V-393H466V-272ZM161 -525V-660H512V-525Z" fill="#eae2b7"/></g></svg>

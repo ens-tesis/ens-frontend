@@ -2,7 +2,6 @@
 
 import { useMutation, useQuery } from "@tanstack/react-query";
 import axios from "axios";
-import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useState, useSyncExternalStore } from "react";
 import { Boton } from "@/shared/components/Boton";
@@ -141,10 +140,7 @@ export default function LoginView() {
         )}
 
         <p className="text-center text-sm text-carbon/70">
-          ¿No tenés cuenta?{" "}
-          <Link href="/registro" className="font-medium text-carbon underline underline-offset-2">
-            Crear cuenta
-          </Link>
+          ¿No tenés cuenta? Pedísela a la preceptoría o dirección de tu colegio.
         </p>
     </PantallaAuth>
   );

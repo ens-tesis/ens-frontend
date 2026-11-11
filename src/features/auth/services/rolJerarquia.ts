@@ -12,7 +12,7 @@ const ORDEN_JERARQUICO: Record<Rol, number> = {
   alumno: 1,
 };
 
-// 'alumno' queda afuera: se da de alta solo por registro público. Ver la
+// 'alumno' queda afuera: se precarga desde un curso. Ver la
 // misma nota en el backend (modules/auth/dto/validation.ts,
 // crearUsuarioAdminSchema) — sin 'alumno' en este set, un docente no
 // tiene ningún rol creable por debajo, coherente con que no puede crear

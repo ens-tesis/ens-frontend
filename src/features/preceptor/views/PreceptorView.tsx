@@ -42,12 +42,14 @@ const SECCIONES: (ItemNav<Seccion> & { descripcion: string })[] = [
   {
     id: "gestion",
     etiqueta: "Gestionar cursos",
+    etiquetaCorta: "Gestión",
     icono: "alumnos",
     descripcion: "Creá cursos, cargá o matriculá alumnos y asigná a los docentes de cada curso.",
   },
   {
     id: "alta",
     etiqueta: "Alta de docentes",
+    etiquetaCorta: "Alta",
     icono: "alta",
     descripcion: "Creá la cuenta de un docente; después asignalo a tus cursos en \"Gestionar cursos\".",
   },
@@ -94,7 +96,7 @@ function AlumnosDelCurso({
 export default function PreceptorView() {
   const { cargando, usuario } = useGuardRol(["preceptor"]);
   const cursos = useCursos(Boolean(usuario));
-  const [seccion, setSeccion] = useState<Seccion>("asistencia");
+  const [seccion, setSeccion] = useState<Seccion>("metricas");
   const [cursoAbierto, setCursoAbierto] = useState<number | null>(null);
   const [alumno, setAlumno] = useState<PersonaResumen | null>(null);
 
@@ -108,6 +110,7 @@ export default function PreceptorView() {
       area="Preceptoría"
       usuario={usuario}
       secciones={SECCIONES}
+      ordenInferior={["cursos", "asistencia", "metricas", "gestion", "alta"]}
       activa={seccion}
       onCambiar={(s) => {
         setSeccion(s);

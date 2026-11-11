@@ -4,6 +4,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useState, useSyncExternalStore } from "react";
 import { api } from "@/shared/api/client";
 import { getToken } from "@/shared/auth/token";
+import { pedirPaseConexion } from "@/shared/lib/paseConexion";
 
 export type TipoNotificacion =
   | "ausente_digital"
@@ -59,17 +60,35 @@ function mostrarNotificacionSistema(n: Notificacion): void {
   );
 }
 
-// Canal en vivo (ws://.../?canal=notificaciones&token=), con el mismo
+// Canal en vivo (ws://.../?canal=notificaciones&pase=), con el mismo
 // criterio de reconexión que useSesionSocket: backoff exponencial sin
-// límite, salvo token inválido (4001), que es definitivo.
-function conectarCanal(token: string, onNotificacion: (n: Notificacion) => void): () => void {
+// límite, salvo token inválido (4001), que es definitivo. Cada intento
+// pide su pase de conexión: el token no va en la URL.
+function conectarCanal(onNotificacion: (n: Notificacion) => void): () => void {
   let cerrado = false;
   let intentos = 0;
   let timer: ReturnType<typeof setTimeout> | undefined;
   let socket: WebSocket | undefined;
 
+  function reintentar(): void {
+    intentos += 1;
+    timer = setTimeout(abrir, Math.min(1000 * 2 ** (intentos - 1), BACKOFF_MAX_MS));
+  }
+
   function abrir(): void {
-    socket = new WebSocket(`${WS_BASE_URL}/?canal=notificaciones&token=${encodeURIComponent(token)}`);
+    pedirPaseConexion().then(
+      (pase) => {
+        // null: el token ya no sirve, igual que un cierre 4001.
+        if (!cerrado && pase !== null) conectar(pase);
+      },
+      () => {
+        if (!cerrado) reintentar();
+      },
+    );
+  }
+
+  function conectar(pase: string): void {
+    socket = new WebSocket(`${WS_BASE_URL}/?canal=notificaciones&pase=${encodeURIComponent(pase)}`);
     socket.onopen = () => {
       intentos = 0;
     };
@@ -83,8 +102,7 @@ function conectarCanal(token: string, onNotificacion: (n: Notificacion) => void)
     };
     socket.onclose = (event) => {
       if (cerrado || event.code === 4001) return;
-      intentos += 1;
-      timer = setTimeout(abrir, Math.min(1000 * 2 ** (intentos - 1), BACKOFF_MAX_MS));
+      reintentar();
     };
   }
 
@@ -116,7 +134,7 @@ export function useNotificaciones() {
 
   useEffect(() => {
     if (!token) return;
-    return conectarCanal(token, (n) => {
+    return conectarCanal((n) => {
       queryClient.setQueryData<Notificacion[]>(CLAVE, (prev) => [n, ...(prev ?? [])].slice(0, 50));
       // Historial/métricas en pantalla quedan desactualizados con un evento nuevo.
       void queryClient.invalidateQueries({ queryKey: ["reportes"] });

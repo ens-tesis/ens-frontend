@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { pedirPaseConexion } from "../lib/paseConexion";
 import type {
   ParticipanteConectado,
   PresenciaClienteMessage,
@@ -112,7 +113,6 @@ const BACKOFF_MAX_MS = 30000;
 // borrar la whitelist ya conocida mientras se reconecta en segundo plano.
 function conectarSesionSocket(
   codigo: string,
-  token: string,
   handlers: ManejadoresConexion,
   socketRef: { current: WebSocket | undefined },
 ): () => void {
@@ -123,10 +123,35 @@ function conectarSesionSocket(
   let reintentoTimer: ReturnType<typeof setTimeout> | undefined;
   let socketActual: WebSocket | undefined;
 
+  function reintentar(): void {
+    intentosFallidos += 1;
+    const espera = Math.min(BACKOFF_INICIAL_MS * 2 ** (intentosFallidos - 1), BACKOFF_MAX_MS);
+    handlers.onEstado("reconectando");
+    reintentoTimer = setTimeout(abrir, espera);
+  }
+
+  // Cada intento pide su pase de conexión (no el token en la URL).
   function abrir(): void {
     handlers.onEstado(intentosFallidos === 0 ? "conectando" : "reconectando");
+    pedirPaseConexion().then(
+      (pase) => {
+        if (cerradoManualmente) return;
+        if (pase === null) {
+          handlers.onEstado("cerrado");
+          handlers.onCierre({ code: 4001, reason: "Token inválido o expirado" });
+          return;
+        }
+        conectar(pase);
+      },
+      // Sin red no hay pase: mismo backoff que un socket caído.
+      () => {
+        if (!cerradoManualmente) reintentar();
+      },
+    );
+  }
 
-    const url = `${WS_BASE_URL}/?codigo=${encodeURIComponent(codigo)}&token=${encodeURIComponent(token)}`;
+  function conectar(pase: string): void {
+    const url = `${WS_BASE_URL}/?codigo=${encodeURIComponent(codigo)}&pase=${encodeURIComponent(pase)}`;
     const socket = new WebSocket(url);
     socketActual = socket;
     socketRef.current = socket;
@@ -162,13 +187,8 @@ function conectarSesionSocket(
         return;
       }
 
-      intentosFallidos += 1;
-      const espera = Math.min(
-        BACKOFF_INICIAL_MS * 2 ** (intentosFallidos - 1),
-        BACKOFF_MAX_MS,
-      );
-      handlers.onEstado("reconectando");
-      reintentoTimer = setTimeout(abrir, espera);
+      // Incluye 4002 (pase vencido): el próximo intento pide uno nuevo.
+      reintentar();
     };
   }
 
@@ -183,7 +203,8 @@ function conectarSesionSocket(
 
 /**
  * Maneja la conexión WebSocket a una sesión de clase (mismo mecanismo
- * documentado en sesiones.ws.ts del backend: query params ?codigo=&token=).
+ * documentado en sesiones.ws.ts del backend: query params ?codigo=&pase=;
+ * `token` solo indica que hay sesión iniciada, no viaja en la URL).
  * Reintenta automáticamente con backoff exponencial ante una desconexión
  * inesperada (red caída); ante un cierre definitivo de la app (token
  * vencido, sesión inactiva) no reintenta solo. `reconectar()` sigue
@@ -210,7 +231,6 @@ export function useSesionSocket(
 
     return conectarSesionSocket(
       codigo,
-      token,
       {
         onReset: () => {
           const guardada = leerWhitelistGuardada(codigo);

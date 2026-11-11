@@ -1,5 +1,5 @@
-import { DirectorView } from "@/features/director";
+import { redirect } from "next/navigation";
 
-export default function DirectorPage() {
-  return <DirectorView />;
+export default function Page() {
+  redirect("/director/metricas");
 }

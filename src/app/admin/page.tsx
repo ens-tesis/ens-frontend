@@ -1,5 +1,5 @@
-import { AdminUsuariosView } from "@/features/auth";
+import { redirect } from "next/navigation";
 
-export default function AdminPage() {
-  return <AdminUsuariosView />;
+export default function Page() {
+  redirect("/admin/inicio");
 }

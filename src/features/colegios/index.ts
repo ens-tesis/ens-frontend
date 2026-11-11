@@ -1,1 +1,2 @@
-export { default as ColegiosView } from "./views/ColegiosView";
+export { InicioColegios, ListadoColegios, NuevoColegio } from "./components/Colegios";
+export { AvisoColegioActual } from "./components/AvisoColegioActual";

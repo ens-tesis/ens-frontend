@@ -8,7 +8,7 @@ import { MensajeEstado } from "@/shared/components/MensajeEstado";
 import { CLASE_FILA, Tarjeta } from "@/shared/components/Tarjeta";
 import { COLOR_ESTADO, ETIQUETA_DESCONEXION, ETIQUETA_ESTADO } from "@/shared/lib/presencia";
 import type { ParticipanteConectado } from "@/shared/types/sesiones";
-import { armarRegistro, duracion, type EntradaRegistro, type EventoClase } from "../registro";
+import { armarRegistro, duracion, type EntradaRegistro, type EventoClase } from "../lib/registro";
 
 const hora = (iso: string) => new Date(iso).toLocaleTimeString("es-AR", { hour12: false });
 

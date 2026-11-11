@@ -1,23 +1,5 @@
 import type { EstadoPresencia } from "@/shared/types/sesiones";
 
-export interface PersonaResumen {
-  id: number;
-  nombre: string;
-  apellido: string;
-  email: string;
-}
-
-export interface Curso {
-  id: number;
-  nombre: string;
-  anioLectivo: number;
-  turno: string | null;
-  cantidadAlumnos: number;
-  umbralDistracciones: number;
-  preceptores: PersonaResumen[];
-  docentes: PersonaResumen[];
-}
-
 export interface ConteosEventos {
   distracciones: number;
   segundosFueraDeFoco: number;
@@ -67,11 +49,6 @@ export interface FilaMetricas extends ConteosEventos {
   sesiones: number;
   alumnosUnicos: number;
   participaciones: number;
-}
-
-export interface Periodo {
-  desde: string;
-  hasta: string;
 }
 
 export interface PlanillaAsistencia {

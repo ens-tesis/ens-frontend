@@ -1,5 +1,5 @@
-import { DocenteView } from "@/features/sesiones-docente";
+import { redirect } from "next/navigation";
 
-export default function DocentePage() {
-  return <DocenteView />;
+export default function Page() {
+  redirect("/docente/clase");
 }

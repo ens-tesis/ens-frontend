@@ -1,7 +1,7 @@
 "use client";
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { fueCancelado, registrarHuella, tieneSensorPropio } from "@/features/auth/services/webauthn";
+import { fueCancelado, registrarHuella, tieneSensorPropio } from "@/features/auth";
 import { api } from "@/shared/api/client";
 import { Boton } from "@/shared/components/Boton";
 import { MensajeEstado } from "@/shared/components/MensajeEstado";

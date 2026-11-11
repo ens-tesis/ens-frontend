@@ -6,8 +6,8 @@ Frontend del piloto ENS (Next.js App Router + TypeScript + Tailwind v4 + TanStac
 
 ## Estado actual (2026-09-16, rama `refactor/arquitectura-modular` — sin mergear a `main`)
 
-- Pantallas reales conectadas al backend real: `/login`, `/docente` (crear sesión, gestionar whitelist, participantes en vivo), `/alumno` (unirse por código, whitelist en vivo vía WebSocket), `/registro` (solo alumno, sin selector de rol), `/admin` (alta de cuentas para admin/director/preceptor, rol limitado a lo que le permite crear su jerarquía).
-- Reestructurado a `src/features/{auth,sesiones-docente,sesiones-alumno}/{views,components,queries,services,index.ts}` + `src/shared` (ver historial 2026-09-16-refactor).
+- Rutas (2026-11-11): un panel por rol con una subdirección por sección — `/admin/{inicio,crear-colegio,colegios}`, `/director/{metricas,asistencia,historial,cursos,alta,usuarios,importar-sie}`, `/preceptor/{metricas,asistencia,historial,mis-cursos,cursos,alta-docentes}`, `/docente/{clase,alumnos,registro,sitios,asistencia}`, más `/alumno`, `/login`, `/cambiar-password`. No hay auto-registro.
+- Estructura (2026-11-11): `src/app/` solo rutas — cada rol tiene `layout.tsx` (guard + menú vía `PanelRol`) y un `page.tsx` finito por sección; el layout de `/docente` mantiene la clase en vivo (WebSocket) entre secciones. `src/features/` por dominio (`auth`, `panel`, `colegios`, `cursos`, `usuarios`, `reportes`, `notificaciones`, `sesiones-docente`, `sesiones-alumno`), cada una con `components/`, `hooks/`, `lib/`, `index.ts`; entre features se importa solo por `index.ts`. `src/shared/` UI y utilidades sin dominio.
 - Identidad visual propia: paleta fija de 5 colores como tokens Tailwind v4 (`@theme` en `src/app/globals.css`), contraste WCAG verificado.
 - Flujo completo (login → crear sesión → agregar whitelist → alumno se une → update en tiempo real) verificado end-to-end en navegador real.
 - Reconexión automática de WebSocket: `useSesionSocket` (`src/shared/hooks/useSesionSocket.ts`) reintenta solo con backoff exponencial (1s → 30s tope, sin límite de intentos) ante una desconexión inesperada, sin perder la whitelist/participantes ya conocidos mientras reintenta.

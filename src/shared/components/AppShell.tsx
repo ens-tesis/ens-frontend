@@ -104,7 +104,7 @@ function ItemLateral<T extends string>({
     </>
   );
   return item.href ? (
-    <Link href={item.href} className={clases}>
+    <Link href={item.href} aria-current={activo ? "page" : undefined} className={clases}>
       {contenido}
     </Link>
   ) : (
@@ -146,7 +146,7 @@ function ItemInferior<T extends string>({
     </>
   );
   return item.href ? (
-    <Link href={item.href} className={clases}>
+    <Link href={item.href} aria-current={activo ? "page" : undefined} className={clases}>
       {contenido}
     </Link>
   ) : (

@@ -1,4 +1,4 @@
-export { Asistencia, useAsistencia } from "./Asistencia";
-export { Historial, HistorialAlumno, FiltroPeriodo, Volver } from "./Historial";
-export { useCursos } from "./useCursos";
-export type { Curso, FilaMetricas, Periodo, PersonaResumen } from "./types";
+export { Asistencia, useAsistencia } from "./components/Asistencia";
+export { Historial, HistorialAlumno } from "./components/Historial";
+export { Metricas } from "./components/Metricas";
+export { MisCursos } from "./components/MisCursos";

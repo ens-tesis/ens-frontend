@@ -4,7 +4,7 @@ import { MensajeEstado } from "@/shared/components/MensajeEstado";
 import { CLASE_FILA, Tarjeta } from "@/shared/components/Tarjeta";
 import { COLOR_ESTADO, ETIQUETA_ESTADO, formatoDuracion } from "@/shared/lib/presencia";
 import type { EstadoPresencia, ParticipanteConectado } from "@/shared/types/sesiones";
-import { atencionPorAlumno, type EntradaRegistro, type Nivel } from "../registro";
+import { atencionPorAlumno, type EntradaRegistro, type Nivel } from "../lib/registro";
 
 interface ParticipantesPanelProps {
   participantes: ParticipanteConectado[];

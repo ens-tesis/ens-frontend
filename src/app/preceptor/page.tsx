@@ -1,5 +1,5 @@
-import { PreceptorView } from "@/features/preceptor";
+import { redirect } from "next/navigation";
 
-export default function PreceptorPage() {
-  return <PreceptorView />;
+export default function Page() {
+  redirect("/preceptor/metricas");
 }

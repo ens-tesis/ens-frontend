@@ -1,1 +1,1 @@
-export { NotificacionesCampana } from "./NotificacionesCampana";
+export { NotificacionesCampana } from "./components/NotificacionesCampana";

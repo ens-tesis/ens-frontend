@@ -1,5 +1,5 @@
-import { ColegiosView } from "@/features/colegios";
+import { redirect } from "next/navigation";
 
-export default function ColegiosPage() {
-  return <ColegiosView />;
+export default function Page() {
+  redirect("/admin");
 }

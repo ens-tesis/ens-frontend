@@ -1,1 +1,1 @@
-export { default as AlumnoView } from "./views/AlumnoView";
+export { default as AlumnoView } from "./components/AlumnoView";

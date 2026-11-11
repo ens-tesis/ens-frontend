@@ -27,6 +27,7 @@ const PUNTO: Record<TipoNotificacion, string> = {
   desconectado: "bg-error",
   distracciones_reiteradas: "bg-violeta",
   no_se_unio: "bg-error",
+  otro_dispositivo: "bg-error",
   contingencia: "bg-alerta",
 };
 

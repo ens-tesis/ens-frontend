@@ -11,6 +11,7 @@ export type TipoNotificacion =
   | "desconectado"
   | "distracciones_reiteradas"
   | "no_se_unio"
+  | "otro_dispositivo"
   | "contingencia";
 
 export interface Notificacion {
@@ -30,6 +31,7 @@ export const TITULO_NOTIFICACION: Record<TipoNotificacion, string> = {
   desconectado: "Alumno desconectado",
   distracciones_reiteradas: "Distracciones reiteradas",
   no_se_unio: "No se unió a la clase",
+  otro_dispositivo: "Otro dispositivo",
   contingencia: "Modo contingencia",
 };
 

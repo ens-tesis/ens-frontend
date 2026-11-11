@@ -1,22 +1,21 @@
 "use client";
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { useSyncExternalStore } from "react";
-import { fueCancelado, registrarHuella, soportaHuella } from "@/features/auth/services/webauthn";
+import { fueCancelado, registrarHuella, tieneSensorPropio } from "@/features/auth/services/webauthn";
 import { api } from "@/shared/api/client";
 import { Boton } from "@/shared/components/Boton";
 import { MensajeEstado } from "@/shared/components/MensajeEstado";
 import { Tarjeta } from "@/shared/components/Tarjeta";
 import { mensajeDeError } from "@/shared/lib/errores";
 
-const sinSuscripcion = () => () => {};
-
 // Invitación a registrar la huella (Anexo B.2). Una vez activada, ese
 // alumno ya no entra con contraseña: así nadie puede entrar por él con su
 // clave prestada.
 export function ActivarHuella() {
   const queryClient = useQueryClient();
-  const soporta = useSyncExternalStore(sinSuscripcion, soportaHuella, () => false);
+  // Solo se invita si este dispositivo tiene sensor o bloqueo de pantalla propio.
+  const sensor = useQuery({ queryKey: ["webauthn", "sensor"], queryFn: tieneSensorPropio, staleTime: Infinity });
+  const soporta = sensor.data === true;
   const estado = useQuery({
     queryKey: ["webauthn", "estado"],
     queryFn: () => api.get<{ tienePasskey: boolean }>("/auth/webauthn/estado").then((r) => r.data),
@@ -40,7 +39,8 @@ export function ActivarHuella() {
     <Tarjeta className="max-w-md space-y-3">
       <p className="font-semibold text-carbon">Entrá con tu huella</p>
       <p className="text-sm text-carbon/70">
-        Activalo una vez en este celular y después entrás sin contraseña. Nadie más va a poder entrar como vos.
+        Activalo una vez en este celular (huella, rostro o el bloqueo de pantalla) y después entrás sin
+        contraseña. Queda atado a este celular: nadie más va a poder entrar como vos.
       </p>
       {registrar.isError && !fueCancelado(registrar.error) && (
         <MensajeEstado tipo="error">{mensajeDeError(registrar.error, "No se pudo activar. Probá de nuevo.")}</MensajeEstado>

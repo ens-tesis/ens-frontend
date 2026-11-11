@@ -166,6 +166,7 @@ export default function DocenteView() {
       area="Docente"
       usuario={usuario}
       secciones={secciones}
+      ordenInferior={["sitios", "alumnos", "clase", "asistencia", "registro"]}
       activa={vista}
       onCambiar={setSeccion}
       titulo={encabezado[vista].titulo}

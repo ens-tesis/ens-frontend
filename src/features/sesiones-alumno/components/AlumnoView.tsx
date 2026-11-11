@@ -1,8 +1,10 @@
 "use client";
 
+import { useQuery } from "@tanstack/react-query";
 import { useRouter } from "next/navigation";
 import type { FormEvent } from "react";
 import { useEffect, useState } from "react";
+import { api } from "@/shared/api/client";
 import { Badge } from "@/shared/components/Badge";
 import { Boton } from "@/shared/components/Boton";
 import { AppShell, PantallaCargando } from "@/shared/components/AppShell";
@@ -58,6 +60,20 @@ export default function AlumnoView({ codigoQr }: { codigoQr: string | null }) {
   const [urlActiva, setUrlActiva] = useState<WhitelistUrl | null>(null);
   const [avisoRevocado, setAvisoRevocado] = useState<string | null>(null);
 
+  // Los sitios que pasan por nuestro backend (/mirror, /px) se abren con un
+  // pase de sitios embebidos en la URL del iframe, nunca con el token: el
+  // iframe no puede mandar el header Authorization y una URL queda en logs
+  // e historial. Se pide al abrir cada sitio (no se guarda): los pases
+  // viven en memoria del backend y un reinicio los invalida.
+  const necesitaPase = urlActiva !== null && urlActiva.modo !== "directo" && urlActiva.modo !== "archivo";
+  const pase = useQuery({
+    queryKey: ["pase-embebidos", urlActiva?.id],
+    queryFn: () => api.post<{ pase: string }>("/mirror/pase").then((r) => r.data.pase),
+    enabled: necesitaPase,
+    staleTime: 0,
+    gcTime: 0,
+  });
+
   // Ajuste de estado durante el render (no un efecto): cada mensaje nuevo de
   // whitelist_update trae un array nuevo por referencia (ver useSesionSocket),
   // así que comparar !== detecta "llegó una actualización" sin necesitar un
@@ -106,15 +122,15 @@ export default function AlumnoView({ codigoQr }: { codigoQr: string | null }) {
   // /mirror; "proxy_general" es el HTML real del sitio reescrito para
   // servirse desde nuestro origen, con su JS/CSS intactos, vía
   // /mirror/pagina (ver reescritorHtml.ts).
-  function srcDe(item: WhitelistUrl): string {
+  function srcDe(item: WhitelistUrl, paseEmbebidos: string): string {
     // "archivo" no usa src (lo dibuja VisorArchivo): se devuelve tal cual.
     if (item.modo === "directo" || item.modo === "archivo") return item.url;
     const apiUrl = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:3001";
     // "proxy_sesion": el sitio real completo (login incluido) a través de
-    // /px — /px/abrir cambia el token por un sid de proxy y redirige.
+    // /px — /px/abrir cambia el pase por un sid de proxy y redirige.
     const ruta =
       item.modo === "proxy_sesion" ? "px/abrir" : item.modo === "proxy_general" ? "mirror/pagina" : "mirror";
-    const params = new URLSearchParams({ url: item.url, token: token ?? "" });
+    const params = new URLSearchParams({ url: item.url, pase: paseEmbebidos });
     return `${apiUrl}/${ruta}?${params.toString()}`;
   }
 
@@ -216,12 +232,25 @@ export default function AlumnoView({ codigoQr }: { codigoQr: string | null }) {
   if (codigoConectado && conectado && urlActiva) {
     return (
       <div className="flex h-dvh flex-col p-2 pt-[calc(env(safe-area-inset-top)+0.5rem)] pb-[calc(env(safe-area-inset-bottom)+0.5rem)]">
-        <VisorEmbebido
-          key={urlActiva.id}
-          item={urlActiva}
-          src={srcDe(urlActiva)}
-          onVolver={() => setUrlActiva(null)}
-        />
+        {necesitaPase && !pase.data ? (
+          <Tarjeta className="m-auto max-w-sm space-y-4 text-center">
+            {pase.isError ? (
+              <MensajeEstado tipo="error">No se pudo abrir el sitio. Volvé e intentá de nuevo.</MensajeEstado>
+            ) : (
+              <MensajeEstado tipo="cargando">Preparando el sitio...</MensajeEstado>
+            )}
+            <Boton variante="sutil" onClick={() => setUrlActiva(null)}>
+              Volver
+            </Boton>
+          </Tarjeta>
+        ) : (
+          <VisorEmbebido
+            key={urlActiva.id}
+            item={urlActiva}
+            src={srcDe(urlActiva, pase.data ?? "")}
+            onVolver={() => setUrlActiva(null)}
+          />
+        )}
       </div>
     );
   }

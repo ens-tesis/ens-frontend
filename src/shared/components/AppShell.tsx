@@ -23,6 +23,9 @@ interface AppShellProps<T extends string> {
   area: string;
   usuario: { nombre: string; apellido?: string; email: string };
   secciones: ItemNav<T>[];
+  // Orden de la barra inferior (mobile) si no es el mismo del sidebar,
+  // p. ej. para dejar la sección principal en el medio, al alcance del pulgar.
+  ordenInferior?: T[];
   activa?: T;
   onCambiar?: (id: T) => void;
   titulo: string;
@@ -205,6 +208,7 @@ export function AppShell<T extends string>({
   area,
   usuario,
   secciones,
+  ordenInferior,
   activa,
   onCambiar,
   titulo,
@@ -214,6 +218,9 @@ export function AppShell<T extends string>({
 }: AppShellProps<T>) {
   const salir = useCerrarSesion();
   const conNav = secciones.length > 1;
+  const inferiores = ordenInferior
+    ? ordenInferior.flatMap((id) => secciones.filter((s) => s.id === id))
+    : secciones;
 
   function cambiar(id: T): void {
     onCambiar?.(id);
@@ -307,7 +314,7 @@ export function AppShell<T extends string>({
           aria-label="Secciones"
           className="pizarron fixed inset-x-3 bottom-[calc(env(safe-area-inset-bottom)+0.75rem)] z-30 flex gap-1 rounded-[1.75rem] p-1.5 shadow-flotante lg:hidden"
         >
-          {secciones.map((s) => (
+          {inferiores.map((s) => (
             <ItemInferior key={s.id} item={s} activo={s.id === activa} onClick={() => cambiar(s.id)} />
           ))}
         </nav>

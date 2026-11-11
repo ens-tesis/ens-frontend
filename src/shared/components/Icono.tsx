@@ -1,6 +1,8 @@
 // Set mínimo de íconos de trazo (24px, currentColor) para la navegación.
 // Inline a propósito: no vale una dependencia por diez paths.
 const PATHS = {
+  inicio: "M3 11l9-8 9 8M5 9.5V21h14V9.5M10 21v-6h4v6",
+  colegio: "M3 21h18M5 21V8l7-5 7 5v13M9 21v-5h6v5M10 10h4M10 13h4",
   metricas: "M4 20V10M10 20V4M16 20v-7M22 20H2",
   asistencia: "M9 11l3 3L22 4M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11",
   historial: "M3 12a9 9 0 1 0 3-6.7L3 8M3 3v5h5M12 7v5l3 2",

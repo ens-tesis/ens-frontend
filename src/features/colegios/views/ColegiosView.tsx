@@ -6,7 +6,7 @@ import { useState, type FormEvent } from "react";
 import { useGuardRol } from "@/features/auth";
 import { FiltroPeriodo, type Periodo } from "@/features/reportes";
 import { api } from "@/shared/api/client";
-import { AppShell, PantallaCargando } from "@/shared/components/AppShell";
+import { AppShell, PantallaCargando, type ItemNav } from "@/shared/components/AppShell";
 import { Badge } from "@/shared/components/Badge";
 import { Boton } from "@/shared/components/Boton";
 import { Campo } from "@/shared/components/Campo";
@@ -99,9 +99,8 @@ function NuevoColegio() {
   }
 
   return (
-    <Tarjeta>
+    <Tarjeta className="max-w-2xl">
       <form onSubmit={enviar} className="space-y-4">
-        <h2 className="font-display text-xl font-bold text-carbon">Nuevo colegio</h2>
         <Campo id="colegio-nombre" label="Nombre del colegio" required value={nombre}
           onChange={(e) => setNombre(e.target.value)} />
         <CamposDirector prefijo="colegio-director" valor={director} onChange={setDirector} />
@@ -293,12 +292,8 @@ function TarjetaColegio({ colegio }: { colegio: Colegio }) {
   );
 }
 
-// Pantalla del admin de la plataforma: no pertenece a ningún colegio; los
-// crea, les pone director y ve cuánto se usa el ENS en cada uno.
-export default function ColegiosView() {
-  const { cargando, usuario } = useGuardRol(["admin"]);
-  const [periodo, setPeriodo] = useState<Periodo>({ desde: "", hasta: "" });
-  const colegios = useQuery({
+function useColegios(periodo: Periodo, enabled: boolean) {
+  return useQuery({
     queryKey: ["colegios", periodo],
     queryFn: () =>
       api
@@ -309,34 +304,163 @@ export default function ColegiosView() {
           },
         })
         .then((r) => r.data.colegios),
-    enabled: Boolean(usuario),
+    enabled,
   });
+}
+
+// Inicio: todos los colegios sumados, y cuáles usan más el ENS.
+function Inicio({ colegios }: { colegios: Colegio[] }) {
+  const suma = (k: keyof Colegio) => colegios.reduce((acc, c) => acc + Number(c[k]), 0);
+  const destacados = [
+    { etiqueta: "Colegios", valor: colegios.length, clase: "pizarron text-arena" },
+    { etiqueta: "Alumnos", valor: suma("alumnos"), clase: "bg-celeste text-carbon" },
+    { etiqueta: "Clases", valor: suma("clases"), clase: "bg-violeta text-carbon" },
+    { etiqueta: "Distracciones", valor: suma("distracciones"), clase: "bg-white text-carbon border border-carbon/[0.07]" },
+  ];
+  const resto: [string, number][] = [
+    ["Directores", colegios.reduce((acc, c) => acc + c.directores.length, 0)],
+    ["Preceptores", suma("preceptores")],
+    ["Docentes", suma("docentes")],
+    ["Cursos", suma("cursos")],
+    ["Alumnos en clase", suma("alumnosEnClase")],
+    ["Ausencias digitales", suma("ausenciasDigitales")],
+  ];
+  const ranking = [...colegios].sort((a, b) => b.clases - a.clases);
+  const max = Math.max(0, ...ranking.map((c) => c.clases));
+
+  if (colegios.length === 0) {
+    return (
+      <Tarjeta>
+        <MensajeEstado tipo="vacio">Todavía no hay colegios. Creá el primero en &quot;Crear colegio&quot;.</MensajeEstado>
+      </Tarjeta>
+    );
+  }
+  return (
+    <div className="space-y-6">
+      <dl className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+        {destacados.map((t) => (
+          <div key={t.etiqueta} className={`rounded-3xl p-4 sm:p-5 ${t.clase}`}>
+            <dt className="text-xs font-semibold opacity-75">{t.etiqueta}</dt>
+            <dd className="mt-3 font-display text-4xl font-bold tabular-nums sm:text-5xl">{t.valor}</dd>
+          </div>
+        ))}
+      </dl>
+      <dl className="grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-6">
+        {resto.map(([etiqueta, valor]) => (
+          <div key={etiqueta} className="rounded-2xl bg-white px-3 py-2 shadow-tarjeta">
+            <dt className="text-xs text-carbon/60">{etiqueta}</dt>
+            <dd className="font-display text-2xl font-bold text-carbon tabular-nums">{valor}</dd>
+          </div>
+        ))}
+      </dl>
+      <Tarjeta className="space-y-3">
+        <h2 className="font-display text-xl font-bold text-carbon">Clases por colegio</h2>
+        <ul className="space-y-3">
+          {ranking.map((c) => (
+            <li key={c.id}>
+              <div className="flex justify-between gap-3 text-sm">
+                <span className="truncate font-medium text-carbon">{c.nombre}</span>
+                <span className="text-carbon/70 tabular-nums">{c.clases}</span>
+              </div>
+              <span className="mt-1 block h-1.5 overflow-hidden rounded-full bg-carbon/[0.06]" aria-hidden="true">
+                <span className="block h-full rounded-full bg-verde" style={{ width: `${max ? (c.clases / max) * 100 : 0}%` }} />
+              </span>
+            </li>
+          ))}
+        </ul>
+      </Tarjeta>
+    </div>
+  );
+}
+
+function ListaColegios({ colegios }: { colegios: Colegio[] }) {
+  const [busqueda, setBusqueda] = useState("");
+  const visibles = colegios.filter((c) => c.nombre.toLowerCase().includes(busqueda.trim().toLowerCase()));
+  return (
+    <div className="space-y-4">
+      {colegios.length > 1 && (
+        <Campo id="buscar-colegio" label="Buscar colegio" type="search" value={busqueda}
+          onChange={(e) => setBusqueda(e.target.value)} />
+      )}
+      {colegios.length === 0 ? (
+        <Tarjeta>
+          <MensajeEstado tipo="vacio">Todavía no hay colegios. Creá el primero en &quot;Crear colegio&quot;.</MensajeEstado>
+        </Tarjeta>
+      ) : visibles.length === 0 ? (
+        <MensajeEstado tipo="vacio">Ningún colegio coincide con &quot;{busqueda}&quot;.</MensajeEstado>
+      ) : (
+        visibles.map((c) => <TarjetaColegio key={c.id} colegio={c} />)
+      )}
+    </div>
+  );
+}
+
+type Seccion = "inicio" | "crear" | "colegios";
+
+const SECCIONES: (ItemNav<Seccion> & { descripcion: string })[] = [
+  {
+    id: "inicio",
+    etiqueta: "Inicio",
+    icono: "inicio",
+    descripcion: "Todos los colegios juntos: cuánta gente tienen y cuánto se usa el ENS.",
+  },
+  {
+    id: "crear",
+    etiqueta: "Crear colegio",
+    icono: "mas",
+    descripcion: "Dá de alta un colegio junto con su director. El director entra con una contraseña provisoria.",
+  },
+  {
+    id: "colegios",
+    etiqueta: "Colegios",
+    icono: "colegio",
+    descripcion: "Las métricas de cada colegio, sus directores, y entrar a operarlo o eliminarlo.",
+  },
+];
+
+// Pantalla del admin de la plataforma: no pertenece a ningún colegio; los
+// crea, les pone director y ve cuánto se usa el ENS en cada uno.
+export default function ColegiosView() {
+  const { cargando, usuario } = useGuardRol(["admin"]);
+  const [seccion, setSeccion] = useState<Seccion>("inicio");
+  const [periodo, setPeriodo] = useState<Periodo>({ desde: "", hasta: "" });
+  const colegios = useColegios(periodo, Boolean(usuario));
 
   if (cargando) return <PantallaCargando />;
   if (!usuario) return null;
+
+  const actual = SECCIONES.find((s) => s.id === seccion)!;
 
   return (
     <AppShell
       area="Administración"
       usuario={usuario}
-      secciones={[]}
-      titulo="Colegios"
-      descripcion="Creá colegios con su director y mirá cuánto se usa el ENS en cada uno."
+      secciones={SECCIONES}
+      ordenInferior={["crear", "inicio", "colegios"]}
+      activa={seccion}
+      onCambiar={setSeccion}
+      titulo={actual.etiqueta}
+      descripcion={actual.descripcion}
     >
-      <div className="space-y-4">
+      {seccion === "crear" ? (
         <NuevoColegio />
-        <Tarjeta className="space-y-2">
-          <p className="text-sm text-carbon/70">Período de las métricas de clases (vacío = desde siempre)</p>
-          <FiltroPeriodo valor={periodo} onChange={setPeriodo} />
-        </Tarjeta>
-        {colegios.isPending ? (
-          <MensajeEstado tipo="cargando">Cargando colegios...</MensajeEstado>
-        ) : colegios.isError ? (
-          <MensajeEstado tipo="error">No se pudieron cargar los colegios.</MensajeEstado>
-        ) : (
-          colegios.data.map((c) => <TarjetaColegio key={c.id} colegio={c} />)
-        )}
-      </div>
+      ) : (
+        <div className="space-y-4">
+          <Tarjeta className="space-y-2">
+            <p className="text-sm text-carbon/70">Período de las clases (vacío = desde siempre)</p>
+            <FiltroPeriodo valor={periodo} onChange={setPeriodo} />
+          </Tarjeta>
+          {colegios.isPending ? (
+            <MensajeEstado tipo="cargando">Cargando colegios...</MensajeEstado>
+          ) : colegios.isError ? (
+            <MensajeEstado tipo="error">No se pudieron cargar los colegios.</MensajeEstado>
+          ) : seccion === "inicio" ? (
+            <Inicio colegios={colegios.data} />
+          ) : (
+            <ListaColegios colegios={colegios.data} />
+          )}
+        </div>
+      )}
     </AppShell>
   );
 }

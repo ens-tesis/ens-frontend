@@ -1,7 +1,6 @@
 "use client";
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import Link from "next/link";
 import { useState } from "react";
 import { esRolInferior, type Rol, type Usuario } from "@/features/auth";
 import { api } from "@/shared/api/client";
@@ -28,7 +27,8 @@ const CLASE_CHIP =
 // US-DI-02: el director gestiona roles y cuentas sin asistencia técnica.
 // Solo puede tocar a usuarios de rol inferior al suyo y asignar roles
 // inferiores (misma regla que aplica el backend, que es quien decide).
-export function GestionUsuarios({ actor }: { actor: Usuario }) {
+// onAlta: abre la sección de alta del mismo panel (no una pantalla aparte).
+export function GestionUsuarios({ actor, onAlta }: { actor: Usuario; onAlta: () => void }) {
   const queryClient = useQueryClient();
   const [filtroRol, setFiltroRol] = useState<Rol | "">("");
   const usuarios = useQuery({
@@ -71,13 +71,14 @@ export function GestionUsuarios({ actor }: { actor: Usuario }) {
             </button>
           ))}
         </div>
-        <Link
-          href="/admin"
+        <button
+          type="button"
+          onClick={onAlta}
           className="inline-flex min-h-11 shrink-0 items-center justify-center gap-2 rounded-xl bg-violeta px-5 text-sm font-semibold text-carbon hover:bg-violeta-hover focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-carbon"
         >
           <Icono nombre="mas" className="size-4" />
           Dar de alta
-        </Link>
+        </button>
       </div>
 
       {actualizar.isError && (

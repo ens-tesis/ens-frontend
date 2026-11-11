@@ -45,6 +45,7 @@ const SECCIONES: (ItemNav<Seccion> & { descripcion: string })[] = [
   {
     id: "alta",
     etiqueta: "Alta de usuarios",
+    etiquetaCorta: "Alta",
     icono: "alta",
     descripcion: "Creá cuentas de preceptores y docentes. Los alumnos se cargan desde cada curso.",
   },
@@ -106,6 +107,7 @@ export default function DirectorView() {
       area={esAdmin ? `Administración · ${colegio.data!.nombre}` : "Dirección"}
       usuario={usuario}
       secciones={SECCIONES}
+      ordenInferior={["alta", "usuarios", "metricas", "asistencia", "historial"]}
       activa={seccion}
       onCambiar={setSeccion}
       titulo={actual.etiqueta}
@@ -127,7 +129,7 @@ export default function DirectorView() {
       {seccion === "historial" && <Historial cursos={cursos.data ?? []} />}
       {seccion === "cursos" && <GestionCursos />}
       {seccion === "alta" && <AltaUsuario rolActor={usuario.rol} />}
-      {seccion === "usuarios" && <GestionUsuarios actor={usuario} />}
+      {seccion === "usuarios" && <GestionUsuarios actor={usuario} onAlta={() => setSeccion("alta")} />}
       {seccion === "importar" && <ImportarSie />}
     </AppShell>
   );

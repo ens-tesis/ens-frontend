@@ -11,6 +11,8 @@ import { Icono, type NombreIcono } from "./Icono";
 export interface ItemNav<T extends string> {
   id: T;
   etiqueta: string;
+  // Para la barra inferior, donde el espacio es poco ("Alta" en vez de "Alta de usuarios").
+  etiquetaCorta?: string;
   icono: NombreIcono;
   // Número chico al lado (p. ej. alumnos conectados).
   contador?: number;
@@ -121,13 +123,15 @@ function ItemInferior<T extends string>({
   activo: boolean;
   onClick: () => void;
 }) {
-  const clases = `flex min-h-14 flex-1 flex-col items-center justify-center gap-1 rounded-2xl text-[11px] font-semibold transition-colors ${FOCO_SOBRE_VERDE} ${
+  // min-w-0 + pastilla con ancho máximo (no fijo): con muchas secciones los
+  // ítems se achican en vez de empujar los últimos fuera de la pantalla.
+  const clases = `flex min-h-14 min-w-0 flex-1 flex-col items-center justify-center gap-1 rounded-2xl text-[11px] font-semibold transition-colors ${FOCO_SOBRE_VERDE} ${
     activo ? "text-arena" : "text-arena/60"
   }`;
   const contenido = (
     <>
       <span
-        className={`relative grid h-8 w-14 place-items-center rounded-full transition-colors ${
+        className={`relative grid h-8 w-full max-w-14 place-items-center rounded-full transition-colors ${
           activo ? "bg-violeta text-carbon" : ""
         }`}
       >
@@ -138,7 +142,7 @@ function ItemInferior<T extends string>({
           </span>
         )}
       </span>
-      {item.etiqueta}
+      <span className="max-w-full truncate">{item.etiquetaCorta ?? item.etiqueta}</span>
     </>
   );
   return item.href ? (

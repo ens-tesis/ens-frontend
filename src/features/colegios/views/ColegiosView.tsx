@@ -1,6 +1,7 @@
 "use client";
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useRouter } from "next/navigation";
 import { useState, type FormEvent } from "react";
 import { useGuardRol } from "@/features/auth";
 import { FiltroPeriodo, type Periodo } from "@/features/reportes";
@@ -181,16 +182,86 @@ function AgregarDirector({ colegioId, onListo }: { colegioId: number; onListo: (
   );
 }
 
+// Irreversible: borra el colegio con todos sus usuarios, cursos y clases.
+// Se confirma escribiendo el nombre (el backend lo vuelve a chequear).
+function EliminarColegio({ colegio, onCancelar }: { colegio: Colegio; onCancelar: () => void }) {
+  const queryClient = useQueryClient();
+  const [confirmacion, setConfirmacion] = useState("");
+  const eliminar = useMutation({
+    mutationFn: () => api.delete(`/instituciones/${colegio.id}`, { data: { nombre: confirmacion } }),
+    onSuccess: () => void queryClient.invalidateQueries({ queryKey: ["colegios"] }),
+  });
+  const total = colegio.alumnos + colegio.docentes + colegio.preceptores + colegio.directores.length;
+  return (
+    <form
+      onSubmit={(e) => {
+        e.preventDefault();
+        eliminar.mutate();
+      }}
+      className="space-y-3 rounded-2xl border border-error/30 bg-error/10 p-4"
+    >
+      <p className="text-sm text-carbon">
+        Se borran para siempre {total} usuarios, {colegio.cursos} cursos y {colegio.clases} clases con toda su
+        asistencia. No se puede deshacer. Escribí <span className="font-semibold">{colegio.nombre}</span> para
+        confirmar.
+      </p>
+      <Campo id={`eliminar-${colegio.id}`} label="Nombre del colegio" autoComplete="off" value={confirmacion}
+        onChange={(e) => setConfirmacion(e.target.value)} />
+      {eliminar.isError && (
+        <MensajeEstado tipo="error">{mensajeDeError(eliminar.error, "No se pudo eliminar el colegio.")}</MensajeEstado>
+      )}
+      <div className="flex gap-2">
+        <Boton
+          type="submit"
+          cargando={eliminar.isPending}
+          disabled={confirmacion.trim() !== colegio.nombre}
+          className="bg-error text-arena hover:bg-error/90"
+        >
+          Eliminar definitivamente
+        </Boton>
+        <Boton type="button" variante="sutil" onClick={onCancelar}>
+          Cancelar
+        </Boton>
+      </div>
+    </form>
+  );
+}
+
 function TarjetaColegio({ colegio }: { colegio: Colegio }) {
+  const router = useRouter();
+  const queryClient = useQueryClient();
   const [agregando, setAgregando] = useState(false);
+  const [eliminando, setEliminando] = useState(false);
+  const entrar = useMutation({
+    mutationFn: () => api.post(`/instituciones/${colegio.id}/entrar`),
+    onSuccess: () => {
+      // Lo cacheado (cursos, usuarios...) era de otro colegio.
+      queryClient.clear();
+      router.push("/director");
+    },
+  });
   return (
     <Tarjeta className="space-y-4">
-      <div>
-        <h2 className="font-display text-xl font-bold text-carbon">{colegio.nombre}</h2>
-        <p className="text-xs text-carbon/60">
-          Creado el {new Date(colegio.createdAt).toLocaleDateString("es-AR")}
-        </p>
+      <div className="flex flex-wrap items-start justify-between gap-3">
+        <div>
+          <h2 className="font-display text-xl font-bold text-carbon">{colegio.nombre}</h2>
+          <p className="text-xs text-carbon/60">
+            Creado el {new Date(colegio.createdAt).toLocaleDateString("es-AR")}
+          </p>
+        </div>
+        <div className="flex flex-wrap gap-2">
+          <Boton cargando={entrar.isPending} onClick={() => entrar.mutate()}>
+            Entrar al colegio
+          </Boton>
+          <Boton variante="sutil" onClick={() => setEliminando(true)}>
+            Eliminar
+          </Boton>
+        </div>
       </div>
+      {entrar.isError && (
+        <MensajeEstado tipo="error">{mensajeDeError(entrar.error, "No se pudo entrar al colegio.")}</MensajeEstado>
+      )}
+      {eliminando && <EliminarColegio colegio={colegio} onCancelar={() => setEliminando(false)} />}
       <dl className="grid grid-cols-2 gap-2 sm:grid-cols-4">
         {METRICAS.map(([k, etiqueta]) => (
           <div key={k} className="rounded-2xl bg-papel px-3 py-2">

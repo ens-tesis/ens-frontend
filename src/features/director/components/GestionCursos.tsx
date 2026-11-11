@@ -13,8 +13,8 @@ import { MensajeEstado } from "@/shared/components/MensajeEstado";
 import { mensajeDeError } from "@/shared/lib/errores";
 
 
-// /admin/usuarios es solo de dirección: el preceptor no lo consulta.
-function useUsuariosPorRol(rol: "alumno" | "preceptor", enabled: boolean) {
+// El preceptor solo puede listar alumnos y docentes (no preceptores).
+function useUsuariosPorRol(rol: "alumno" | "preceptor" | "docente", enabled: boolean) {
   return useQuery({
     queryKey: ["usuarios", rol],
     queryFn: () =>
@@ -200,10 +200,13 @@ function Asignaciones({
   );
 }
 
+const CAMPO_ID = { preceptores: "preceptorId", docentes: "docenteId", alumnos: "alumnoId" } as const;
+
 function DetalleCurso({ curso, esPreceptor }: { curso: Curso; esPreceptor: boolean }) {
   const queryClient = useQueryClient();
   const preceptores = useUsuariosPorRol("preceptor", !esPreceptor);
-  const alumnosDisponibles = useUsuariosPorRol("alumno", !esPreceptor);
+  const docentes = useUsuariosPorRol("docente", true);
+  const alumnosDisponibles = useUsuariosPorRol("alumno", true);
   const alumnos = useQuery({
     queryKey: ["cursos", curso.id, "alumnos"],
     queryFn: () =>
@@ -211,9 +214,9 @@ function DetalleCurso({ curso, esPreceptor }: { curso: Curso; esPreceptor: boole
   });
 
   const cambio = useMutation({
-    mutationFn: (op: { metodo: "post" | "delete"; recurso: "preceptores" | "alumnos"; id: number }) =>
+    mutationFn: (op: { metodo: "post" | "delete"; recurso: "preceptores" | "docentes" | "alumnos"; id: number }) =>
       op.metodo === "post"
-        ? api.post(`/cursos/${curso.id}/${op.recurso}`, op.recurso === "alumnos" ? { alumnoId: op.id } : { preceptorId: op.id })
+        ? api.post(`/cursos/${curso.id}/${op.recurso}`, { [CAMPO_ID[op.recurso]]: op.id })
         : api.delete(`/cursos/${curso.id}/${op.recurso}/${op.id}`),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ["cursos"] }),
   });
@@ -232,9 +235,17 @@ function DetalleCurso({ curso, esPreceptor }: { curso: Curso; esPreceptor: boole
         />
       )}
       <Asignaciones
+        titulo="Docentes"
+        asignados={curso.docentes}
+        disponibles={docentes.data ?? []}
+        onAgregar={(id) => cambio.mutate({ metodo: "post", recurso: "docentes", id })}
+        onQuitar={(id) => cambio.mutate({ metodo: "delete", recurso: "docentes", id })}
+        error={cambio.variables?.recurso === "docentes" ? error : null}
+      />
+      <Asignaciones
         titulo="Alumnos"
         asignados={alumnos.data ?? []}
-        disponibles={esPreceptor ? null : (alumnosDisponibles.data ?? [])}
+        disponibles={alumnosDisponibles.data ?? []}
         onAgregar={(id) => cambio.mutate({ metodo: "post", recurso: "alumnos", id })}
         onQuitar={(id) => cambio.mutate({ metodo: "delete", recurso: "alumnos", id })}
         error={cambio.variables?.recurso === "alumnos" ? error : null}
@@ -321,7 +332,7 @@ export function GestionCursos({ esPreceptor = false }: { esPreceptor?: boolean }
                     </span>
                   </span>
                   <span className="block text-xs text-carbon/60">
-                    {c.cantidadAlumnos} alumnos · {c.preceptores.length} preceptores
+                    {c.cantidadAlumnos} alumnos · {c.docentes.length} docentes · {c.preceptores.length} preceptores
                   </span>
                 </span>
                 <Icono

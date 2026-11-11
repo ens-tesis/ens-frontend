@@ -15,6 +15,7 @@ export interface Curso {
   cantidadAlumnos: number;
   umbralDistracciones: number;
   preceptores: PersonaResumen[];
+  docentes: PersonaResumen[];
 }
 
 export interface ConteosEventos {

@@ -214,6 +214,11 @@ export default function DocenteView() {
               ))}
             </select>
           </label>
+          {cursos.data?.length === 0 && (
+            <p className="rounded-xl bg-arena/15 px-3 py-2 text-sm text-arena">
+              Todavía no tenés cursos asignados. Pedile a preceptoría o dirección que te asignen.
+            </p>
+          )}
           <Boton
             cargando={crearSesion.isPending}
             disabled={!cursoId}

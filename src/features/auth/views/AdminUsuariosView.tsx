@@ -1,6 +1,6 @@
 "use client";
 
-import { useMutation } from "@tanstack/react-query";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import axios from "axios";
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
@@ -51,50 +51,27 @@ function extraerMensajeError(err: unknown): string {
   return "No se pudo crear la cuenta. Intentá de nuevo.";
 }
 
-export default function AdminUsuariosView() {
-  const router = useRouter();
-  const usuarioQuery = useUsuarioActual();
-
-  useEffect(() => {
-    if (usuarioQuery.data && !puedeCrearUsuarios(usuarioQuery.data.usuario.rol)) {
-      router.replace("/login");
-    }
-  }, [usuarioQuery.data, router]);
-
-  const opcionesRol = usuarioQuery.data ? rolesInferioresA(usuarioQuery.data.usuario.rol) : [];
+// Formulario de alta: lo usan esta pantalla y las secciones "Alta de
+// usuarios" de dirección y preceptoría. Solo ofrece roles inferiores al
+// propio (la regla real la aplica el backend).
+export function AltaUsuario({ rolActor }: { rolActor: Rol }) {
+  const opcionesRol = rolesInferioresA(rolActor);
   const [form, setForm] = useState(FORM_VACIO);
   const [rol, setRol] = useState<Rol | "">("");
 
+  const queryClient = useQueryClient();
   const mutation = useMutation({
     mutationFn: (input: CrearUsuarioInput) =>
       api.post<CrearUsuarioResponse>("/admin/usuarios", input),
     onSuccess: () => {
       setForm(FORM_VACIO);
       setRol("");
+      // Las listas para asignar a cursos y la de gestión de usuarios.
+      void queryClient.invalidateQueries({ queryKey: ["usuarios"] });
     },
   });
 
-  if (usuarioQuery.isPending) return <PantallaCargando />;
-  if (!usuarioQuery.data || !puedeCrearUsuarios(usuarioQuery.data.usuario.rol)) return null;
-
-  const { usuario } = usuarioQuery.data;
-
   return (
-    <AppShell
-      area={AREA[usuario.rol]}
-      usuario={usuario}
-      secciones={[]}
-      titulo="Dar de alta una cuenta"
-      descripcion="La persona va a poder ingresar con este email y contraseña."
-    >
-      <Link
-        href={rutaPorRol(usuario.rol)}
-        className="-mt-2 inline-flex min-h-11 items-center gap-1 rounded-xl text-sm font-semibold text-carbon/70 hover:text-carbon focus-visible:outline focus-visible:outline-2 focus-visible:outline-carbon"
-      >
-        <Icono nombre="volver" className="size-4" />
-        Volver al panel
-      </Link>
-
       <Tarjeta className="max-w-lg">
         <form
           className="flex flex-col gap-4"
@@ -176,6 +153,40 @@ export default function AdminUsuariosView() {
           </Boton>
         </form>
       </Tarjeta>
+  );
+}
+
+export default function AdminUsuariosView() {
+  const router = useRouter();
+  const usuarioQuery = useUsuarioActual();
+
+  useEffect(() => {
+    if (usuarioQuery.data && !puedeCrearUsuarios(usuarioQuery.data.usuario.rol)) {
+      router.replace("/login");
+    }
+  }, [usuarioQuery.data, router]);
+
+  if (usuarioQuery.isPending) return <PantallaCargando />;
+  if (!usuarioQuery.data || !puedeCrearUsuarios(usuarioQuery.data.usuario.rol)) return null;
+
+  const { usuario } = usuarioQuery.data;
+
+  return (
+    <AppShell
+      area={AREA[usuario.rol]}
+      usuario={usuario}
+      secciones={[]}
+      titulo="Dar de alta una cuenta"
+      descripcion="La persona va a poder ingresar con este email y contraseña."
+    >
+      <Link
+        href={rutaPorRol(usuario.rol)}
+        className="-mt-2 inline-flex min-h-11 items-center gap-1 rounded-xl text-sm font-semibold text-carbon/70 hover:text-carbon focus-visible:outline focus-visible:outline-2 focus-visible:outline-carbon"
+      >
+        <Icono nombre="volver" className="size-4" />
+        Volver al panel
+      </Link>
+      <AltaUsuario rolActor={usuario.rol} />
     </AppShell>
   );
 }

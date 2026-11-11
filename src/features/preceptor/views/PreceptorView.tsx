@@ -2,8 +2,8 @@
 
 import { useQuery } from "@tanstack/react-query";
 import { useState } from "react";
-import { useGuardRol } from "@/features/auth";
-import { GestionCursos } from "@/features/director";
+import { AltaUsuario, useGuardRol } from "@/features/auth";
+import { GestionCursos, Metricas } from "@/features/director";
 import { NotificacionesCampana } from "@/features/notificaciones";
 import { Asistencia, Historial, HistorialAlumno, useCursos, type Curso, type PersonaResumen } from "@/features/reportes";
 import { api } from "@/shared/api/client";
@@ -12,7 +12,7 @@ import { Icono } from "@/shared/components/Icono";
 import { MensajeEstado } from "@/shared/components/MensajeEstado";
 import { CLASE_FILA, Tarjeta } from "@/shared/components/Tarjeta";
 
-type Seccion = "asistencia" | "historial" | "cursos" | "gestion" | "alta";
+type Seccion = "asistencia" | "metricas" | "historial" | "cursos" | "gestion" | "alta";
 
 const SECCIONES: (ItemNav<Seccion> & { descripcion: string })[] = [
   {
@@ -20,6 +20,12 @@ const SECCIONES: (ItemNav<Seccion> & { descripcion: string })[] = [
     etiqueta: "Asistencia",
     icono: "asistencia",
     descripcion: "Por clase: quién se conectó, quién faltó y quién llegó tarde o no se quedó conectado.",
+  },
+  {
+    id: "metricas",
+    etiqueta: "Métricas",
+    icono: "metricas",
+    descripcion: "Uso del ENS en tus cursos, por curso o por docente. Filtrá por fechas y exportá a Excel.",
   },
   {
     id: "historial",
@@ -37,9 +43,14 @@ const SECCIONES: (ItemNav<Seccion> & { descripcion: string })[] = [
     id: "gestion",
     etiqueta: "Gestionar cursos",
     icono: "alumnos",
-    descripcion: "Creá cursos y precargá a sus alumnos con una contraseña provisoria.",
+    descripcion: "Creá cursos, cargá o matriculá alumnos y asigná a los docentes de cada curso.",
   },
-  { id: "alta", etiqueta: "Alta docente", icono: "alta", href: "/admin", descripcion: "" },
+  {
+    id: "alta",
+    etiqueta: "Alta de docentes",
+    icono: "alta",
+    descripcion: "Creá la cuenta de un docente; después asignalo a tus cursos en \"Gestionar cursos\".",
+  },
 ];
 
 function AlumnosDelCurso({
@@ -108,6 +119,8 @@ export default function PreceptorView() {
     >
       {seccion === "gestion" ? (
         <GestionCursos esPreceptor />
+      ) : seccion === "alta" ? (
+        <AltaUsuario rolActor={usuario.rol} />
       ) : cursos.isPending ? (
         <MensajeEstado tipo="cargando">Cargando cursos...</MensajeEstado>
       ) : cursos.isError ? (
@@ -120,6 +133,8 @@ export default function PreceptorView() {
         </Tarjeta>
       ) : seccion === "asistencia" ? (
         <Asistencia cursos={cursos.data} />
+      ) : seccion === "metricas" ? (
+        <Metricas />
       ) : seccion === "historial" ? (
         <Historial cursos={cursos.data} />
       ) : alumno ? (

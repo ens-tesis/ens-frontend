@@ -4,7 +4,9 @@ import { useQuery } from "@tanstack/react-query";
 import { useState } from "react";
 import { api } from "@/shared/api/client";
 import { Badge } from "@/shared/components/Badge";
+import { Boton } from "@/shared/components/Boton";
 import { CLASE_CONTROL, CLASE_ETIQUETA } from "@/shared/components/Campo";
+import { Icono } from "@/shared/components/Icono";
 import { MensajeEstado } from "@/shared/components/MensajeEstado";
 import { Tarjeta } from "@/shared/components/Tarjeta";
 import { FiltroPeriodo } from "./Historial";
@@ -38,6 +40,61 @@ const CELDA = {
   presente: { simbolo: "✓", clase: "bg-verde/15 text-verde", texto: "Presente" },
   infraccion: { simbolo: "!", clase: "bg-alerta/30 text-carbon", texto: "Presente con infracciones" },
 } as const;
+
+// Mes actual en hora local, "AAAA-MM" (lo que usa <input type="month">).
+function mesActual(): string {
+  const hoy = new Date();
+  return `${hoy.getFullYear()}-${String(hoy.getMonth() + 1).padStart(2, "0")}`;
+}
+
+// La planilla completa de un mes (una columna por clase) para Excel.
+function ExportarMes({ cursoId }: { cursoId: number }) {
+  const [mes, setMes] = useState(mesActual);
+  const [descargando, setDescargando] = useState(false);
+  const [error, setError] = useState(false);
+
+  async function descargar(): Promise<void> {
+    const [anio, m] = mes.split("-").map(Number);
+    const ultimoDia = new Date(anio, m, 0).getDate();
+    setDescargando(true);
+    setError(false);
+    try {
+      const res = await api.get<Blob>("/asistencia", {
+        params: { cursoId, desde: `${mes}-01`, hasta: `${mes}-${ultimoDia}`, formato: "csv" },
+        responseType: "blob",
+      });
+      const url = URL.createObjectURL(res.data);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `asistencia-${mes}.csv`;
+      a.click();
+      URL.revokeObjectURL(url);
+    } catch {
+      setError(true);
+    } finally {
+      setDescargando(false);
+    }
+  }
+
+  return (
+    <Tarjeta className="flex flex-col gap-3 sm:flex-row sm:items-end">
+      <label className="space-y-1.5 sm:w-48">
+        <span className={CLASE_ETIQUETA}>Mes a exportar</span>
+        <input
+          type="month"
+          value={mes}
+          onChange={(e) => setMes(e.target.value)}
+          className={CLASE_CONTROL}
+        />
+      </label>
+      <Boton variante="sutil" cargando={descargando} disabled={!mes} onClick={() => void descargar()}>
+        <Icono nombre="descargar" className="size-4" />
+        Exportar CSV del mes
+      </Boton>
+      {error && <MensajeEstado tipo="error">No se pudo exportar. Intentá de nuevo.</MensajeEstado>}
+    </Tarjeta>
+  );
+}
 
 /**
  * Planilla de asistencia por clase: todos los alumnos del curso contra
@@ -85,6 +142,7 @@ export function Asistencia({ cursos }: { cursos: Curso[] }) {
         </label>
         <FiltroPeriodo valor={periodo} onChange={setPeriodo} />
       </Tarjeta>
+      {cursoId && <ExportarMes cursoId={Number(cursoId)} />}
 
       {cursos.length === 0 ? (
         <Tarjeta>

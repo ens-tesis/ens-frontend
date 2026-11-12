@@ -36,21 +36,16 @@ const mismoDia = (a: Date, b: Date) => iso(a) === iso(b);
 const diaMes = (d: Date) => d.toLocaleDateString("es-AR", { day: "numeric", month: "short" }).replace(".", "");
 const hora = (s: string) => new Date(s).toLocaleTimeString("es-AR", { hour: "2-digit", minute: "2-digit" });
 
-// Mes actual en hora local, "AAAA-MM" (lo que usa <input type="month">).
-function mesActual(): string {
-  const hoy = new Date();
-  return `${hoy.getFullYear()}-${pad(hoy.getMonth() + 1)}`;
-}
-
-// La planilla completa de un mes (una columna por clase) para Excel.
-function ExportarMes({ cursoId }: { cursoId: number }) {
-  const [mes, setMes] = useState(mesActual);
+// La planilla completa del mes de la semana que se está viendo (una
+// columna por clase) para Excel.
+function ExportarMes({ cursoId, fecha }: { cursoId: number; fecha: Date }) {
   const [descargando, setDescargando] = useState(false);
   const [error, setError] = useState(false);
+  const mes = `${fecha.getFullYear()}-${pad(fecha.getMonth() + 1)}`;
+  const nombreMes = fecha.toLocaleDateString("es-AR", { month: "long" });
 
   async function descargar(): Promise<void> {
-    const [anio, m] = mes.split("-").map(Number);
-    const ultimoDia = new Date(anio!, m!, 0).getDate();
+    const ultimoDia = new Date(fecha.getFullYear(), fecha.getMonth() + 1, 0).getDate();
     setDescargando(true);
     setError(false);
     try {
@@ -72,16 +67,40 @@ function ExportarMes({ cursoId }: { cursoId: number }) {
   }
 
   return (
-    <div className="space-y-1.5">
-      <span className={CLASE_ETIQUETA}>Exportar un mes a Excel</span>
-      <div className="flex gap-2">
-        <input type="month" aria-label="Mes a exportar" value={mes} onChange={(e) => setMes(e.target.value)} className={`${CLASE_CONTROL} min-w-0`} />
-        <Boton variante="sutil" cargando={descargando} disabled={!mes} onClick={() => void descargar()} className="shrink-0">
-          <Icono nombre="descargar" className="size-4" />
-          CSV
-        </Boton>
+    <div className="flex items-center gap-2">
+      {error && <span className="text-xs text-error">No se pudo exportar.</span>}
+      <Boton variante="sutil" cargando={descargando} onClick={() => void descargar()} className="shrink-0">
+        <Icono nombre="descargar" className="size-4" />
+        Exportar {nombreMes}
+      </Boton>
+    </div>
+  );
+}
+
+// ‹ 9 – 13 nov › como una sola pastilla, con "Hoy" si no es esta semana.
+function NavegadorSemana({ lunes, onMover, onHoy }: { lunes: Date; onMover: (n: number) => void; onHoy: () => void }) {
+  const viernes = sumarDias(lunes, 4);
+  const esActual = mismoDia(lunes, lunesDe(new Date()));
+  const CLASE_FLECHA =
+    "grid size-9 place-items-center rounded-full text-carbon/70 hover:bg-carbon/[0.06] hover:text-carbon focus-visible:outline focus-visible:outline-2 focus-visible:outline-carbon";
+  return (
+    <div className="flex items-center gap-3">
+      <div className="inline-flex items-center gap-1 rounded-full border border-carbon/10 bg-white p-0.5">
+        <button type="button" aria-label="Semana anterior" onClick={() => onMover(-1)} className={CLASE_FLECHA}>
+          <Icono nombre="flecha" className="size-4 rotate-180" />
+        </button>
+        <span className="min-w-28 px-1 text-center text-sm font-semibold text-carbon tabular-nums">
+          {diaMes(lunes)} – {diaMes(viernes)}
+        </span>
+        <button type="button" aria-label="Semana siguiente" onClick={() => onMover(1)} className={CLASE_FLECHA}>
+          <Icono nombre="flecha" className="size-4" />
+        </button>
       </div>
-      {error && <MensajeEstado tipo="error">No se pudo exportar. Probá de nuevo.</MensajeEstado>}
+      {!esActual && (
+        <button type="button" onClick={onHoy} className="text-sm font-semibold text-carbon/60 hover:text-carbon">
+          Hoy
+        </button>
+      )}
     </div>
   );
 }
@@ -128,9 +147,6 @@ function ElegirCurso({ cursos, valor, onChange }: { cursos: Curso[]; valor: stri
     </div>
   );
 }
-
-const CLASE_NAV =
-  "grid size-10 place-items-center rounded-full border border-carbon/10 bg-white text-carbon hover:border-carbon/25 focus-visible:outline focus-visible:outline-2 focus-visible:outline-carbon";
 
 // Las clases de un día para un alumno, con el link a cada una.
 function DetalleDia({
@@ -200,7 +216,6 @@ export function AsistenciaSemanal() {
     return { fecha, clases: (d?.clases ?? []).filter((c) => mismoDia(new Date(c.iniciadaAt), fecha)) };
   });
   const hayClases = dias.some((x) => x.clases.length > 0);
-  const semanaActual = mismoDia(lunes, lunesDe(new Date()));
 
   function moverSemana(n: number): void {
     setLunes((l) => sumarDias(l, n * 7));
@@ -216,55 +231,45 @@ export function AsistenciaSemanal() {
     );
   }
 
+  const cuerpo = planilla.isPending ? (
+    <MensajeEstado tipo="cargando">Cargando asistencia...</MensajeEstado>
+  ) : planilla.isError ? (
+    <MensajeEstado tipo="error">No se pudo cargar la asistencia. Recargá la página.</MensajeEstado>
+  ) : d!.alumnos.length === 0 ? (
+    <MensajeEstado tipo="vacio">Este curso no tiene alumnos. Cargalos desde la gestión de cursos.</MensajeEstado>
+  ) : !hayClases ? (
+    <MensajeEstado tipo="vacio">No hubo clases de este curso esa semana.</MensajeEstado>
+  ) : null;
+
   return (
     <div className="space-y-5">
-      <Tarjeta className="space-y-5">
-        <ElegirCurso
-          cursos={cursos}
-          valor={cursoId}
-          onChange={(id) => {
-            setCursoId(id);
-            setCelda(null);
-          }}
-        />
-        <div className="grid gap-4 border-t border-carbon/[0.07] pt-5 md:grid-cols-[2fr_1fr]">
-          <div className="flex items-center gap-3">
-            <button type="button" aria-label="Semana anterior" onClick={() => moverSemana(-1)} className={CLASE_NAV}>
-              <Icono nombre="flecha" className="size-4 rotate-180" />
-            </button>
-            <div className="min-w-0 flex-1">
-              <p className="font-display text-lg font-bold text-carbon">
-                {diaMes(lunes)} – {diaMes(viernes)}
-              </p>
-              {!semanaActual && (
-                <button type="button" onClick={() => { setLunes(lunesDe(new Date())); setCelda(null); }} className="text-xs font-semibold text-carbon/60 hover:text-carbon">
-                  Volver a esta semana
-                </button>
-              )}
-            </div>
-            <button type="button" aria-label="Semana siguiente" onClick={() => moverSemana(1)} className={CLASE_NAV}>
-              <Icono nombre="flecha" className="size-4" />
-            </button>
-          </div>
-          {cursoId && <ExportarMes cursoId={Number(cursoId)} />}
-        </div>
-      </Tarjeta>
+      <ElegirCurso
+        cursos={cursos}
+        valor={cursoId}
+        onChange={(id) => {
+          setCursoId(id);
+          setCelda(null);
+        }}
+      />
 
-      {planilla.isPending ? (
-        <MensajeEstado tipo="cargando">Cargando asistencia...</MensajeEstado>
-      ) : planilla.isError ? (
-        <MensajeEstado tipo="error">No se pudo cargar la asistencia. Recargá la página.</MensajeEstado>
-      ) : d!.alumnos.length === 0 ? (
-        <Tarjeta>
-          <MensajeEstado tipo="vacio">Este curso no tiene alumnos. Cargalos desde la gestión de cursos.</MensajeEstado>
-        </Tarjeta>
-      ) : !hayClases ? (
-        <Tarjeta>
-          <MensajeEstado tipo="vacio">No hubo clases de este curso esa semana.</MensajeEstado>
-        </Tarjeta>
-      ) : (
-        <Tarjeta className="space-y-4 p-0 sm:p-0">
-          <ul className="flex flex-wrap gap-x-5 gap-y-2 px-5 pt-5 text-xs text-carbon/70 sm:px-6">
+      <Tarjeta className="space-y-4 p-0 sm:p-0">
+        <div className="flex flex-wrap items-center justify-between gap-3 px-5 pt-5 sm:px-6">
+          <NavegadorSemana
+            lunes={lunes}
+            onMover={moverSemana}
+            onHoy={() => {
+              setLunes(lunesDe(new Date()));
+              setCelda(null);
+            }}
+          />
+          {cursoId && <ExportarMes cursoId={Number(cursoId)} fecha={lunes} />}
+        </div>
+
+        {cuerpo ? (
+          <div className="px-5 pb-5 sm:px-6">{cuerpo}</div>
+        ) : (
+          <>
+          <ul className="flex flex-wrap gap-x-5 gap-y-2 px-5 text-xs text-carbon/70 sm:px-6">
             {(Object.keys(ETIQUETA_MARCA) as MarcaDia[]).map((m) => (
               <li key={m} className="inline-flex items-center gap-2">
                 <span className={`grid h-6 min-w-6 place-items-center rounded-md px-1 font-mono text-xs font-bold ${ESTILO_MARCA[m]}`}>{m}</span>
@@ -345,8 +350,9 @@ export function AsistenciaSemanal() {
               </tbody>
             </table>
           </div>
-        </Tarjeta>
-      )}
+          </>
+        )}
+      </Tarjeta>
     </div>
   );
 }

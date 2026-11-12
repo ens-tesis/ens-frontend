@@ -9,7 +9,7 @@ const ASISTENCIA: SeccionPanel = {
   segmento: "asistencia",
   etiqueta: "Asistencia",
   icono: "asistencia",
-  descripcion: "Tus clases por curso: quién se conectó, quién faltó y quién llegó tarde o no se quedó conectado.",
+  descripcion: "Tu clase de hoy: quién entró, quién llegó tarde y quién no se conectó.",
 };
 
 function Secciones({ children }: { children: ReactNode }) {

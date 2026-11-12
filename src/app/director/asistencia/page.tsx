@@ -1,5 +1,5 @@
-import { Asistencia } from "@/features/reportes";
+import { AsistenciaSemanal } from "@/features/reportes";
 
 export default function Page() {
-  return <Asistencia />;
+  return <AsistenciaSemanal />;
 }

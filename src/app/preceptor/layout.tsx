@@ -5,7 +5,7 @@ const SECCIONES: SeccionPanel[] = [
     segmento: "asistencia",
     etiqueta: "Asistencia",
     icono: "asistencia",
-    descripcion: "Por clase: quién se conectó, quién faltó y quién llegó tarde o no se quedó conectado.",
+    descripcion: "Semana por semana: quién estuvo en todas las clases del día, quién faltó a alguna y quién llegó tarde.",
   },
   {
     segmento: "metricas",

@@ -1,6 +1,7 @@
 "use client";
 
 import { useQuery } from "@tanstack/react-query";
+import Link from "next/link";
 import QRCode from "qrcode";
 import { useRef, useState } from "react";
 import { Icono } from "@/shared/components/Icono";
@@ -96,6 +97,10 @@ export function CodigoSesion({ codigo, curso, estado, enVivo }: CodigoSesionProp
               <Icono nombre="copiar" className="size-4" />
               {copiado ? "¡Copiado!" : "Copiar código"}
             </button>
+            <Link href={`/docente/asistencia/${codigo}`} className={`${CLASE_BOTON} bg-arena/10 hover:bg-arena/15`}>
+              <Icono nombre="asistencia" className="size-4" />
+              Asistencia
+            </Link>
           </div>
           <p className="mt-4 text-sm text-arena/70">
             Los alumnos escanean el QR o escriben el código en su pantalla.

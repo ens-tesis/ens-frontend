@@ -51,16 +51,52 @@ export interface FilaMetricas extends ConteosEventos {
   participaciones: number;
 }
 
+export interface ClaseAsistencia {
+  id: number;
+  codigo: string;
+  iniciadaAt: string;
+  activa: boolean;
+  docente: string;
+}
+
+export interface ClaseDetalle extends ClaseAsistencia {
+  cursoId: number | null;
+  curso: string | null;
+  docenteId: number;
+  finalizadaAt: string | null;
+}
+
+export interface AlumnoAsistencia {
+  id: number;
+  nombre: string;
+  apellido: string;
+  matriculado: boolean;
+}
+
+// Solo las clases a las que el alumno entró; sin fila = no se conectó.
+export interface Participacion {
+  sesionId: number;
+  alumnoId: number;
+  minutosDesdeInicio: number;
+  tarde: boolean;
+  distracciones: number;
+  ausenciasDigitales: number;
+  cortesDeRed: number;
+  salidasAntesDelFinal: number;
+  // Vacío = presente sin infracciones (los arma el backend).
+  motivos: string[];
+}
+
 export interface PlanillaAsistencia {
   umbralDistracciones: number;
-  clases: { id: number; codigo: string; iniciadaAt: string; activa: boolean; docente: string }[];
-  alumnos: { id: number; nombre: string; apellido: string; matriculado: boolean }[];
-  // Solo las clases a las que el alumno entró; sin fila = no se conectó.
-  participaciones: {
-    sesionId: number;
-    alumnoId: number;
-    minutosDesdeInicio: number;
-    // Vacío = presente sin infracciones (los arma el backend).
-    motivos: string[];
-  }[];
+  clases: ClaseAsistencia[];
+  alumnos: AlumnoAsistencia[];
+  participaciones: Participacion[];
+}
+
+export interface AsistenciaDeClase {
+  clase: ClaseDetalle;
+  umbralDistracciones: number;
+  alumnos: AlumnoAsistencia[];
+  participaciones: Participacion[];
 }

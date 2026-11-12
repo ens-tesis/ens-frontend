@@ -3,7 +3,7 @@
 import { usePathname } from "next/navigation";
 import type { ReactNode } from "react";
 import { useGuardRol, type Rol } from "@/features/auth";
-import { NotificacionesCampana } from "@/features/notificaciones";
+import { BannerDesconexion, NotificacionesCampana } from "@/features/notificaciones";
 import { AppShell, PantallaCargando, type ItemNav } from "@/shared/components/AppShell";
 import type { NombreIcono } from "@/shared/components/Icono";
 
@@ -72,7 +72,7 @@ export function PanelRol({
       {...(actual && { activa: actual.segmento })}
       titulo={actual?.titulo ?? actual?.etiqueta ?? area}
       {...(actual && { descripcion: actual.descripcion })}
-      {...(conNotificaciones && { acciones: <NotificacionesCampana /> })}
+      {...(conNotificaciones && { acciones: <NotificacionesCampana />, banner: <BannerDesconexion /> })}
     >
       {aviso}
       {children}

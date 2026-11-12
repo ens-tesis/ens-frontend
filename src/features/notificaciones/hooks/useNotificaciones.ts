@@ -1,6 +1,6 @@
 "use client";
 
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useQuery, useQueryClient, type QueryClient } from "@tanstack/react-query";
 import { useEffect, useState, useSyncExternalStore } from "react";
 import { api } from "@/shared/api/client";
 import { getToken } from "@/shared/auth/token";
@@ -15,26 +15,45 @@ export type TipoNotificacion =
   | "otro_dispositivo"
   | "contingencia";
 
+// Una alerta es un incidente: abierta (resueltaAt null) mientras dure,
+// resuelta cuando el alumno vuelve o termina la clase. Un cambio
+// (sin_red -> desconectado, o resolverse) llega como la misma fila por WS.
 export interface Notificacion {
   id: number;
   alumnoId: number | null;
+  alumnoNombre: string | null;
   sesionId: number | null;
   sesionCodigo: string | null;
   tipo: TipoNotificacion;
   mensaje: string;
-  leida: boolean;
   createdAt: string;
+  resueltaAt: string | null;
 }
 
 export const TITULO_NOTIFICACION: Record<TipoNotificacion, string> = {
   ausente_digital: "Ausente digital",
-  sin_red: "Alumno sin red",
-  desconectado: "Alumno desconectado",
+  sin_red: "Sin red",
+  desconectado: "Desconectado",
   distracciones_reiteradas: "Distracciones reiteradas",
-  no_se_unio: "No se unió a la clase",
+  no_se_unio: "No se unió",
   otro_dispositivo: "Otro dispositivo",
   contingencia: "Modo contingencia",
 };
+
+export type Severidad = "presencia" | "seguridad" | "sistema";
+
+export const SEVERIDAD: Record<TipoNotificacion, Severidad> = {
+  ausente_digital: "presencia",
+  sin_red: "presencia",
+  desconectado: "presencia",
+  distracciones_reiteradas: "presencia",
+  no_se_unio: "presencia",
+  otro_dispositivo: "seguridad",
+  contingencia: "sistema",
+};
+
+export const textoCompleto = (n: Notificacion) =>
+  n.alumnoNombre ? `${n.alumnoNombre} ${n.mensaje}` : n.mensaje;
 
 const CLAVE = ["notificaciones"];
 const WS_BASE_URL = process.env.NEXT_PUBLIC_WS_URL ?? "ws://localhost:3001";
@@ -46,18 +65,26 @@ function leerPermiso(): Permiso {
   return typeof Notification === "undefined" ? "no-soportado" : Notification.permission;
 }
 
-// Notificación del sistema (estilo app). Vía Service Worker y no con
-// `new Notification()`: en Android el constructor no está permitido.
-function mostrarNotificacionSistema(n: Notificacion): void {
+// Notificación del sistema (estilo app), solo si la pestaña está oculta:
+// con la app a la vista ya está la campana y el banner. Vía Service
+// Worker y no con `new Notification()`: en Android el constructor no está
+// permitido. Una por alumno y clase (tag): la escalada reemplaza a la
+// anterior en vez de apilarse, y resolverse la cierra.
+function notificacionSistema(n: Notificacion): void {
   if (leerPermiso() !== "granted" || !("serviceWorker" in navigator)) return;
-  void navigator.serviceWorker.ready.then((reg) =>
-    reg.showNotification(TITULO_NOTIFICACION[n.tipo], {
-      body: n.mensaje,
+  const tag = `ens-${n.sesionId}-${n.alumnoId ?? n.tipo}`;
+  void navigator.serviceWorker.ready.then(async (reg) => {
+    if (n.resueltaAt || !document.hidden) {
+      for (const abierta of await reg.getNotifications({ tag })) abierta.close();
+      return;
+    }
+    await reg.showNotification(TITULO_NOTIFICACION[n.tipo], {
+      body: `${textoCompleto(n)} · clase ${n.sesionCodigo}`,
       icon: "/icon.svg",
-      tag: `ens-${n.id}`,
+      tag,
       data: { url: window.location.pathname },
-    }),
-  );
+    });
+  });
 }
 
 // Canal en vivo (ws://.../?canal=notificaciones&pase=), con el mismo
@@ -114,6 +141,27 @@ function conectarCanal(onNotificacion: (n: Notificacion) => void): () => void {
   };
 }
 
+// Un solo canal por pestaña aunque varios componentes (campana, banner)
+// usen el hook: el primero lo abre, el último lo cierra.
+let usosDelCanal = 0;
+let cerrarCanal: (() => void) | undefined;
+
+function compartirCanal(queryClient: QueryClient): () => void {
+  if (usosDelCanal++ === 0) {
+    cerrarCanal = conectarCanal((n) => {
+      queryClient.setQueryData<Notificacion[]>(CLAVE, (prev) =>
+        [n, ...(prev ?? []).filter((p) => p.id !== n.id)].slice(0, 50),
+      );
+      // Historial/métricas en pantalla quedan desactualizados con un evento nuevo.
+      void queryClient.invalidateQueries({ queryKey: ["reportes"] });
+      notificacionSistema(n);
+    });
+  }
+  return () => {
+    if (--usosDelCanal === 0) cerrarCanal?.();
+  };
+}
+
 export function useNotificaciones() {
   const queryClient = useQueryClient();
   const token = getToken();
@@ -134,65 +182,15 @@ export function useNotificaciones() {
 
   useEffect(() => {
     if (!token) return;
-    return conectarCanal((n) => {
-      queryClient.setQueryData<Notificacion[]>(CLAVE, (prev) => [n, ...(prev ?? [])].slice(0, 50));
-      // Historial/métricas en pantalla quedan desactualizados con un evento nuevo.
-      void queryClient.invalidateQueries({ queryKey: ["reportes"] });
-      mostrarNotificacionSistema(n);
-    });
+    return compartirCanal(queryClient);
   }, [token, queryClient]);
-
-  const marcarLeidas = useMutation({
-    mutationFn: () => api.post("/notificaciones/leidas"),
-    onSuccess: () =>
-      queryClient.setQueryData<Notificacion[]>(CLAVE, (prev) =>
-        (prev ?? []).map((n) => ({ ...n, leida: true })),
-      ),
-  });
 
   const notificaciones = query.data ?? [];
   return {
-    notificaciones,
-    noLeidas: notificaciones.filter((n) => !n.leida).length,
-    marcarLeidas: () => marcarLeidas.mutate(),
+    abiertas: notificaciones.filter((n) => !n.resueltaAt),
+    resueltas: notificaciones.filter((n) => n.resueltaAt),
     permiso,
     pedirPermiso: () =>
       void Notification.requestPermission().then(() => setVersionPermiso((v) => v + 1)),
-  };
-}
-
-// US-PC-02: alertas silenciadas por alumno (sin vencimiento) o todas por
-// un período. El backend directamente no crea la notificación.
-export interface Silencio {
-  id: number;
-  alumnoId: number | null;
-  alumnoNombre: string | null;
-  hasta: string | null;
-}
-
-const CLAVE_SILENCIOS = ["notificaciones", "silencios"];
-
-export function useSilencios(enabled: boolean) {
-  const queryClient = useQueryClient();
-  const query = useQuery({
-    queryKey: CLAVE_SILENCIOS,
-    queryFn: () => api.get<{ silencios: Silencio[] }>("/notificaciones/silencios").then((r) => r.data.silencios),
-    enabled,
-  });
-  const silenciar = useMutation({
-    mutationFn: (body: { alumnoId: number } | { horas: number }) =>
-      api.post<{ silencios: Silencio[] }>("/notificaciones/silencios", body),
-    onSuccess: (res) => queryClient.setQueryData(CLAVE_SILENCIOS, res.data.silencios),
-  });
-  const reactivar = useMutation({
-    mutationFn: (id: number) => api.delete(`/notificaciones/silencios/${id}`),
-    onSuccess: (_, id) =>
-      queryClient.setQueryData<Silencio[]>(CLAVE_SILENCIOS, (prev) => (prev ?? []).filter((s) => s.id !== id)),
-  });
-  return {
-    silencios: query.data ?? [],
-    silenciar: silenciar.mutate,
-    reactivar: reactivar.mutate,
-    ocupado: silenciar.isPending || reactivar.isPending,
   };
 }

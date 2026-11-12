@@ -35,6 +35,8 @@ interface AppShellProps<T extends string> {
   descripcion?: string;
   // A la derecha de la barra superior (la campana de alertas).
   acciones?: ReactNode;
+  // Debajo de la barra, pegado a ella al scrollear (alerta urgente).
+  banner?: ReactNode;
   children: ReactNode;
 }
 
@@ -209,6 +211,7 @@ export function AppShell<T extends string>({
   titulo,
   descripcion,
   acciones,
+  banner,
   children,
 }: AppShellProps<T>) {
   const salir = useCerrarSesion();
@@ -287,6 +290,7 @@ export function AppShell<T extends string>({
               </div>
             </div>
           </div>
+          {banner}
         </header>
 
         <main

@@ -56,6 +56,8 @@ export default function DirectorLayout({ children }: LayoutProps<"/director">) {
       area="Dirección"
       secciones={SECCIONES}
       ordenInferior={["alta", "usuarios", "metricas", "asistencia", "historial"]}
+      // Las alertas van a docente y preceptores; dirección no recibe ninguna.
+      conNotificaciones={false}
       aviso={<AvisoColegioActual />}
     >
       {children}

@@ -3,7 +3,8 @@
 // los manda en lote al volver la red — vía Background Sync donde existe
 // (Chrome/Android), o cuando la página le avisa que reconectó.
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:3001";
+import { urlBackend } from "../api/backendUrl";
+
 const TAG_SYNC = "ens-eventos-offline";
 
 async function swActivo(): Promise<ServiceWorkerRegistration | null> {
@@ -17,11 +18,11 @@ export function encolarEventoOffline(
   estado: "conectado" | "fuera_de_foco",
   token: string,
 ): void {
-  void swActivo().then((reg) => {
+  void Promise.all([swActivo(), urlBackend()]).then(([reg, api]) => {
     if (!reg) return;
     reg.active!.postMessage({
       type: "encolar",
-      evento: { api: API_URL, codigo, token, estado, tsClient: new Date().toISOString() },
+      evento: { api, codigo, token, estado, tsClient: new Date().toISOString() },
     });
     // Background Sync no está en los tipos de TS (no es estándar en todos
     // los navegadores): se usa si está.

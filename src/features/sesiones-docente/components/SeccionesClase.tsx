@@ -9,7 +9,7 @@ import { CLASE_CONTROL, CLASE_ETIQUETA } from "@/shared/components/Campo";
 import { MensajeEstado } from "@/shared/components/MensajeEstado";
 import { Tarjeta } from "@/shared/components/Tarjeta";
 import type { EstadoPresencia } from "@/shared/types/sesiones";
-import { CLAVE_SESION_ACTIVA, useClaseDocente } from "../hooks/useClaseDocente";
+import { useClaseDocente } from "../hooks/useClaseDocente";
 import { CodigoSesion } from "./CodigoSesion";
 import { LinksFijos } from "./LinksFijos";
 import { ParticipantesPanel } from "./ParticipantesPanel";
@@ -35,13 +35,13 @@ function extraerMensajeError(err: unknown): string {
 }
 
 // Alumnos, Registro y Sitios solo existen con una clase en curso: sin
-// clase, a Nueva clase. Se vuelve a mirar sessionStorage porque en el
-// primer render (hidratación) el código guardado todavía no se leyó.
+// clase, a Nueva clase. El código guardado ya está en el primer render
+// (PersistGate espera a restaurar el store).
 export function RequiereClase({ children }: { children: ReactNode }) {
   const { codigoActivo } = useClaseDocente();
   const router = useRouter();
   useEffect(() => {
-    if (!codigoActivo && !window.sessionStorage.getItem(CLAVE_SESION_ACTIVA)) router.replace("/docente/clase");
+    if (!codigoActivo) router.replace("/docente/clase");
   }, [codigoActivo, router]);
   return codigoActivo ? children : null;
 }

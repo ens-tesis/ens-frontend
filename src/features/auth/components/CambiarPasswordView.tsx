@@ -15,6 +15,7 @@ import { PantallaAuth } from "./PantallaAuth";
 
 interface CambiarPasswordResponse {
   token: string;
+  refreshToken: string;
   usuario: Usuario;
 }
 
@@ -33,7 +34,7 @@ export default function CambiarPasswordView() {
       }),
     onSuccess: (res) => {
       // El token viejo traía la marca de "debe cambiarla": hay que reemplazarlo.
-      setToken(res.data.token);
+      setToken(res.data.token, res.data.refreshToken);
       queryClient.setQueryData(["me"], { usuario: res.data.usuario });
       router.replace(rutaPorRol(res.data.usuario.rol));
     },

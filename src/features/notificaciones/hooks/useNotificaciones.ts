@@ -3,8 +3,10 @@
 import { useQuery, useQueryClient, type QueryClient } from "@tanstack/react-query";
 import { useEffect, useState, useSyncExternalStore } from "react";
 import { api } from "@/shared/api/client";
+import { urlWebSocket } from "@/shared/api/backendUrl";
 import { getToken } from "@/shared/auth/token";
 import { pedirPaseConexion } from "@/shared/lib/paseConexion";
+import { suscribirPush } from "@/shared/pwa/push";
 
 export type TipoNotificacion =
   | "ausente_digital"
@@ -61,7 +63,6 @@ export const textoClase = (n: Notificacion): string | null =>
   n.curso ? `clase ${n.curso}` : n.sesionCodigo ? `clase ${n.sesionCodigo}` : null;
 
 const CLAVE = ["notificaciones"];
-const WS_BASE_URL = process.env.NEXT_PUBLIC_WS_URL ?? "ws://localhost:3001";
 const BACKOFF_MAX_MS = 30000;
 
 type Permiso = NotificationPermission | "no-soportado";
@@ -111,7 +112,7 @@ function conectarCanal(onNotificacion: (n: Notificacion) => void): () => void {
     pedirPaseConexion().then(
       (pase) => {
         // null: el token ya no sirve, igual que un cierre 4001.
-        if (!cerrado && pase !== null) conectar(pase);
+        if (!cerrado && pase !== null) void conectar(pase);
       },
       () => {
         if (!cerrado) reintentar();
@@ -119,8 +120,10 @@ function conectarCanal(onNotificacion: (n: Notificacion) => void): () => void {
     );
   }
 
-  function conectar(pase: string): void {
-    socket = new WebSocket(`${WS_BASE_URL}/?canal=notificaciones&pase=${encodeURIComponent(pase)}`);
+  async function conectar(pase: string): Promise<void> {
+    const base = await urlWebSocket();
+    if (cerrado) return;
+    socket = new WebSocket(`${base}/?canal=notificaciones&pase=${encodeURIComponent(pase)}`);
     socket.onopen = () => {
       intentos = 0;
     };
@@ -185,10 +188,17 @@ export function useNotificaciones() {
     enabled: Boolean(token),
   });
 
+  // Boolean: renovar el token no tiene que reabrir el canal.
+  const haySesion = Boolean(token);
   useEffect(() => {
-    if (!token) return;
+    if (!haySesion) return;
     return compartirCanal(queryClient);
-  }, [token, queryClient]);
+  }, [haySesion, queryClient]);
+
+  // Con el permiso ya dado (ahora o en otra visita), alta en Web Push.
+  useEffect(() => {
+    if (haySesion && permiso === "granted") suscribirPush().catch(() => {});
+  }, [haySesion, permiso]);
 
   const notificaciones = query.data ?? [];
   return {

@@ -1,8 +1,8 @@
 // Service Worker del ENS:
 // - Notificaciones del sistema (en Android, `new Notification()` no está
 //   permitido; solo `registration.showNotification`). Las dispara la app
-//   abierta al recibirlas por WebSocket (ver useNotificaciones.ts) — no hay
-//   Web Push con la app cerrada (requiere VAPID, fuera de esta etapa).
+//   abierta al recibirlas por WebSocket (ver useNotificaciones.ts) y, con la
+//   app cerrada, el backend las manda por Web Push (VAPID, evento "push").
 // - Caché offline de la app (anteproyecto §3.2): si el wifi del colegio se
 //   cae y el alumno recarga, la PWA abre igual (con la última whitelist que
 //   guarda useSesionSocket) en vez de la página de error del navegador.
@@ -155,6 +155,45 @@ self.addEventListener("sync", (event) => {
 self.addEventListener("message", (event) => {
   if (event.data?.type === "encolar") event.waitUntil(encolar(event.data.evento));
   if (event.data?.type === "sincronizar") event.waitUntil(sincronizar().catch(() => {}));
+});
+
+// --- Web Push ---
+// Alerta abierta mandada por el backend (notificaciones/usecase/push.ts).
+// Mismo tag que la que arma la app abierta (useNotificaciones.ts): si
+// llegan las dos, la segunda reemplaza a la primera en vez de apilarse.
+// Con una ventana del ENS a la vista no se muestra: ya están la campana y
+// el banner.
+const TITULOS = {
+  ausente_digital: "Ausente digital",
+  sin_red: "Sin red",
+  desconectado: "Desconectado",
+  distracciones_reiteradas: "Distracciones reiteradas",
+  no_se_unio: "No se unió",
+  otro_dispositivo: "Otro dispositivo",
+  contingencia: "Modo contingencia",
+};
+
+self.addEventListener("push", (event) => {
+  let n;
+  try {
+    n = event.data?.json().notificacion;
+  } catch {
+    return;
+  }
+  if (!n) return;
+  event.waitUntil(
+    self.clients.matchAll({ type: "window", includeUncontrolled: true }).then((ventanas) => {
+      if (ventanas.some((v) => v.visibilityState === "visible")) return;
+      const texto = n.alumnoNombre ? `${n.alumnoNombre} ${n.mensaje}` : n.mensaje;
+      const clase = n.curso ? `clase ${n.curso}` : n.sesionCodigo ? `clase ${n.sesionCodigo}` : null;
+      return self.registration.showNotification(TITULOS[n.tipo] ?? "ENS", {
+        body: [texto, clase].filter(Boolean).join(" · "),
+        icon: "/icon-192.png",
+        tag: `ens-${n.sesionId}-${n.alumnoId ?? n.tipo}`,
+        data: { url: "/" },
+      });
+    }),
+  );
 });
 
 // Al tocar la notificación: enfoca una pestaña/ventana del ENS ya abierta

@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import type { FormEvent } from "react";
 import { useEffect, useState } from "react";
 import { api } from "@/shared/api/client";
+import { urlBackendActual } from "@/shared/api/backendUrl";
 import { Badge } from "@/shared/components/Badge";
 import { Boton } from "@/shared/components/Boton";
 import { AppShell, PantallaCargando } from "@/shared/components/AppShell";
@@ -13,20 +14,21 @@ import { MensajeEstado } from "@/shared/components/MensajeEstado";
 import { CLASE_FILA_INTERACTIVA, Tarjeta } from "@/shared/components/Tarjeta";
 import { getToken, useUsuarioActual } from "@/features/auth";
 import { mensajeDeCierre, useSesionSocket } from "@/shared/hooks/useSesionSocket";
-import { useSessionStorageInicial } from "@/shared/hooks/useSessionStorageInicial";
+import { setCodigoAlumno } from "@/shared/store/claseSlice";
+import { useAppDispatch, useAppSelector } from "@/shared/store/store";
 import { encolarEventoOffline, sincronizarEventosOffline } from "@/shared/lib/eventosOffline";
 import { tituloDe } from "@/shared/lib/url";
 import type { WhitelistUrl } from "@/shared/types/sesiones";
 import { ActivarHuella } from "../components/ActivarHuella";
 import { VisorEmbebido } from "../components/VisorEmbebido";
 
-// Ver la misma nota en sesiones-docente/views/DocenteView.tsx sobre sessionStorage.
-const CLAVE_SESION_ACTIVA = "ens_sesion_conectada_codigo";
-
 export default function AlumnoView({ codigoQr }: { codigoQr: string | null }) {
   const router = useRouter();
   const usuarioQuery = useUsuarioActual();
-  const codigoGuardado = useSessionStorageInicial(CLAVE_SESION_ACTIVA);
+  // Clase a la que está unido (Redux, persistida cifrada: sobrevive a que
+  // el sistema cierre la PWA).
+  const codigoGuardado = useAppSelector((s) => s.clase.codigoAlumno);
+  const dispatch = useAppDispatch();
   // undefined = "todavía no se tocó, usar lo guardado"; string | null =
   // override explícito (conectar / volver), pisa lo que diga el storage.
   // El código del QR pisa lo guardado: es la clase que el alumno acaba de escanear.
@@ -46,9 +48,9 @@ export default function AlumnoView({ codigoQr }: { codigoQr: string | null }) {
   // vuelva a forzar este código después de salir de la clase.
   useEffect(() => {
     if (!codigoQr) return;
-    window.sessionStorage.setItem(CLAVE_SESION_ACTIVA, codigoQr);
+    dispatch(setCodigoAlumno(codigoQr));
     if (getToken()) router.replace("/alumno");
-  }, [codigoQr, router]);
+  }, [codigoQr, router, dispatch]);
 
   const token = getToken();
   const socket = useSesionSocket(codigoConectado, token);
@@ -125,7 +127,7 @@ export default function AlumnoView({ codigoQr }: { codigoQr: string | null }) {
   function srcDe(item: WhitelistUrl, paseEmbebidos: string): string {
     // "archivo" no usa src (lo dibuja VisorArchivo): se devuelve tal cual.
     if (item.modo === "directo" || item.modo === "archivo") return item.url;
-    const apiUrl = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:3001";
+    const apiUrl = urlBackendActual();
     // "proxy_sesion": el sitio real completo (login incluido) a través de
     // /px — /px/abrir cambia el pase por un sid de proxy y redirige.
     const ruta =
@@ -211,12 +213,12 @@ export default function AlumnoView({ codigoQr }: { codigoQr: string | null }) {
     e.preventDefault();
     const codigo = inputCodigo.trim().toUpperCase();
     if (!codigo) return;
-    window.sessionStorage.setItem(CLAVE_SESION_ACTIVA, codigo);
+    dispatch(setCodigoAlumno(codigo));
     setCodigoOverride(codigo);
   }
 
   function volver(): void {
-    window.sessionStorage.removeItem(CLAVE_SESION_ACTIVA);
+    dispatch(setCodigoAlumno(null));
     setCodigoOverride(null);
     setInputCodigo("");
   }

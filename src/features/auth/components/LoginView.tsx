@@ -21,6 +21,7 @@ interface LoginInput {
 
 interface LoginResponse {
   token: string;
+  refreshToken: string;
   usuario: Usuario;
 }
 
@@ -62,7 +63,7 @@ export default function LoginView() {
   const mutation = useMutation({
     mutationFn: (input: LoginInput) => api.post<LoginResponse>("/auth/login", input),
     onSuccess: (res) => {
-      setToken(res.data.token);
+      setToken(res.data.token, res.data.refreshToken);
       router.push(rutaInicial(res.data.usuario));
     },
   });
@@ -70,7 +71,7 @@ export default function LoginView() {
   const conHuella = useMutation({
     mutationFn: ingresarConHuella,
     onSuccess: (data) => {
-      setToken(data.token);
+      setToken(data.token, data.refreshToken);
       router.push(rutaInicial(data.usuario));
     },
   });

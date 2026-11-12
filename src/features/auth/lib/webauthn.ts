@@ -38,10 +38,10 @@ function idDispositivo(): string | undefined {
   }
 }
 
-export async function ingresarConHuella(): Promise<{ token: string; usuario: Usuario }> {
+export async function ingresarConHuella(): Promise<{ token: string; refreshToken: string; usuario: Usuario }> {
   const { data: optionsJSON } = await api.post<PublicKeyCredentialRequestOptionsJSON>("/auth/webauthn/ingreso/opciones");
   const respuesta = await startAuthentication({ optionsJSON });
-  const { data } = await api.post<{ token: string; usuario: Usuario }>("/auth/webauthn/ingreso/verificar", {
+  const { data } = await api.post<{ token: string; refreshToken: string; usuario: Usuario }>("/auth/webauthn/ingreso/verificar", {
     respuesta,
     dispositivo: idDispositivo(),
   });

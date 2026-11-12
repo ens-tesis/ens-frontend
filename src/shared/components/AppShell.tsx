@@ -4,7 +4,11 @@ import { useQueryClient } from "@tanstack/react-query";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState, type ReactNode } from "react";
-import { clearToken } from "../auth/token";
+import { api } from "../api/client";
+import { clearToken, getRefreshToken } from "../auth/token";
+import { desuscribirPush } from "../pwa/push";
+import { limpiarClase } from "../store/claseSlice";
+import { useAppDispatch } from "../store/store";
 import { BotonInstalar } from "../pwa/BotonInstalar";
 import { Icono, type NombreIcono } from "./Icono";
 import { LogoMarca, LogoPalabra } from "./Logo";
@@ -47,8 +51,15 @@ function iniciales(u: { nombre: string; apellido?: string }): string {
 function useCerrarSesion() {
   const router = useRouter();
   const queryClient = useQueryClient();
-  return () => {
+  const dispatch = useAppDispatch();
+  return async () => {
+    // Antes de borrar el token: la baja de push y la revocación del
+    // refresh token van autenticadas. Sin red, se sale igual.
+    await desuscribirPush().catch(() => {});
+    const refreshToken = getRefreshToken();
+    if (refreshToken) await api.post("/auth/logout", { refreshToken }).catch(() => {});
     clearToken();
+    dispatch(limpiarClase());
     window.sessionStorage.clear();
     queryClient.clear();
     router.replace("/login");

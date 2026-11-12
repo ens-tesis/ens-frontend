@@ -7,16 +7,18 @@ on:
     branches: [main]
 
 jobs:
-  lint-and-build:
+  lint-build-test:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
-          node-version: '20'
+          # node --test con globs necesita Node 22+.
+          node-version: '22'
           cache: 'npm'
       - run: npm ci
       - run: npm run lint
+      - run: npm test
       - run: npm run build
         env:
           NEXT_PUBLIC_API_URL: http://localhost:3001

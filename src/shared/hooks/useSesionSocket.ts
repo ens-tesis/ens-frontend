@@ -1,7 +1,10 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { urlWebSocket } from "../api/backendUrl";
 import { pedirPaseConexion } from "../lib/paseConexion";
+import { guardarWhitelist } from "../store/claseSlice";
+import { useAppStore } from "../store/store";
 import type {
   ParticipanteConectado,
   PresenciaClienteMessage,
@@ -45,8 +48,6 @@ interface ManejadoresConexion {
   onCierre: (cierre: CierreWs) => void;
 }
 
-const WS_BASE_URL = process.env.NEXT_PUBLIC_WS_URL ?? "ws://localhost:3001";
-
 // Mapeo de los códigos de cierre que documenta sesiones.ws.ts (backend)
 // a mensajes que un usuario final entiende, sin exponer detalles técnicos.
 const MENSAJES_CIERRE: Record<number, string> = {
@@ -68,32 +69,6 @@ export function mensajeDeCierre(code: number): string {
 // son definitivos (token vencido, sesión inactiva, etc.) — reintentar no
 // va a cambiar el resultado, así que ahí no hay backoff, se corta.
 const CIERRES_DEFINITIVOS = new Set(Object.keys(MENSAJES_CIERRE).map(Number));
-
-// Última whitelist recibida por clase (anteproyecto §3.1): con el wifi
-// caído y la página recargada, el alumno sigue viendo sus sitios
-// permitidos hasta que el socket vuelve y el servidor manda la vigente.
-// sessionStorage como el código de clase: dura lo que la pestaña. ponytail:
-// el alumno podría editarla a mano, pero solo vale mientras no hay
-// conexión; al reconectar la pisa la del servidor.
-const claveWhitelist = (codigo: string) => `ens_whitelist_${codigo}`;
-
-function leerWhitelistGuardada(codigo: string): WhitelistUrl[] | null {
-  try {
-    const guardada = window.sessionStorage.getItem(claveWhitelist(codigo));
-    return guardada ? (JSON.parse(guardada) as WhitelistUrl[]) : null;
-  } catch {
-    return null;
-  }
-}
-
-function guardarWhitelist(codigo: string, whitelist: WhitelistUrl[] | null): void {
-  try {
-    if (whitelist) window.sessionStorage.setItem(claveWhitelist(codigo), JSON.stringify(whitelist));
-    else window.sessionStorage.removeItem(claveWhitelist(codigo));
-  } catch {
-    // storage lleno o bloqueado: queda solo en memoria
-  }
-}
 
 const BACKOFF_INICIAL_MS = 1000;
 const BACKOFF_MAX_MS = 30000;
@@ -141,7 +116,7 @@ function conectarSesionSocket(
           handlers.onCierre({ code: 4001, reason: "Token inválido o expirado" });
           return;
         }
-        conectar(pase);
+        void conectar(pase);
       },
       // Sin red no hay pase: mismo backoff que un socket caído.
       () => {
@@ -150,8 +125,9 @@ function conectarSesionSocket(
     );
   }
 
-  function conectar(pase: string): void {
-    const url = `${WS_BASE_URL}/?codigo=${encodeURIComponent(codigo)}&pase=${encodeURIComponent(pase)}`;
+  async function conectar(pase: string): Promise<void> {
+    const url = `${await urlWebSocket()}/?codigo=${encodeURIComponent(codigo)}&pase=${encodeURIComponent(pase)}`;
+    if (cerradoManualmente) return;
     const socket = new WebSocket(url);
     socketActual = socket;
     socketRef.current = socket;
@@ -223,9 +199,13 @@ export function useSesionSocket(
   const [sincronizado, setSincronizado] = useState(false);
   const [intento, setIntento] = useState(0);
   const socketRef = useRef<WebSocket>(undefined);
+  const store = useAppStore();
+  // Solo importa si hay sesión, no cuál token: renovarlo (cada 90 min el
+  // del alumno) no tiene que cortar y reabrir el socket en plena clase.
+  const haySesion = Boolean(token);
 
   useEffect(() => {
-    if (!codigo || !token) {
+    if (!codigo || !haySesion) {
       return;
     }
 
@@ -233,8 +213,8 @@ export function useSesionSocket(
       codigo,
       {
         onReset: () => {
-          const guardada = leerWhitelistGuardada(codigo);
-          setWhitelist(guardada ?? []);
+          // Última whitelist recibida (Redux, persistida cifrada).
+          setWhitelist(store.getState().clase.whitelists[codigo] ?? []);
           setParticipantes([]);
           setCierre(null);
           setContingencia(false);
@@ -242,7 +222,7 @@ export function useSesionSocket(
         },
         onEstado: setEstado,
         onWhitelist: (w) => {
-          guardarWhitelist(codigo, w);
+          store.dispatch(guardarWhitelist({ codigo, whitelist: w }));
           setWhitelist(w);
         },
         onParticipantes: setParticipantes,
@@ -251,14 +231,14 @@ export function useSesionSocket(
         onCierre: (c) => {
           // Cierre definitivo (clase finalizada, sin permiso...): esa
           // whitelist ya no rige.
-          guardarWhitelist(codigo, null);
+          store.dispatch(guardarWhitelist({ codigo, whitelist: null }));
           setEstado("cerrado");
           setCierre(c);
         },
       },
       socketRef,
     );
-  }, [codigo, token, intento]);
+  }, [codigo, haySesion, intento, store]);
 
   const estadoEfectivo: EstadoConexionWs = !codigo || !token ? "inactivo" : estado;
 

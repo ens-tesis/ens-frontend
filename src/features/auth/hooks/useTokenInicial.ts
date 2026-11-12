@@ -3,7 +3,7 @@
 import { useSyncExternalStore } from "react";
 import { getToken } from "../lib/session";
 
-// Mismo motivo que useSessionStorageInicial: leer localStorage
+// Mismo motivo que en otros hooks de hidratación: leer localStorage
 // directamente en el cuerpo del render (getToken()) difiere entre server
 // (siempre null, no hay localStorage) y cliente, y si esa diferencia
 // decide qué JSX se muestra, React tira "hydration failed". Con

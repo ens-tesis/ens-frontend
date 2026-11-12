@@ -2,9 +2,13 @@
 
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { useEffect, useState } from "react";
+import { Provider } from "react-redux";
+import { PersistGate } from "redux-persist/integration/react";
+import { crearStore } from "../store/store";
 
 export function Providers({ children }: { children: React.ReactNode }) {
   const [queryClient] = useState(() => new QueryClient());
+  const [{ store, persistor }] = useState(crearStore);
 
   // En todas las pantallas (no solo las que usan notificaciones): sin
   // Service Worker el navegador no ofrece instalar la app.
@@ -26,6 +30,12 @@ export function Providers({ children }: { children: React.ReactNode }) {
   }, []);
 
   return (
-    <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>
+    <Provider store={store}>
+      {/* Hasta descifrar lo persistido (unos ms) no se dibuja nada: si no, la
+          vista del alumno creería por un instante que no hay clase. */}
+      <PersistGate persistor={persistor} loading={null}>
+        <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>
+      </PersistGate>
+    </Provider>
   );
 }

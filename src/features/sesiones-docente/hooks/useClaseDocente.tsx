@@ -7,16 +7,11 @@ import { useCursos, type Curso } from "@/features/cursos";
 import { useAsistencia } from "@/features/reportes";
 import { api } from "@/shared/api/client";
 import { useSesionSocket } from "@/shared/hooks/useSesionSocket";
-import { useSessionStorageInicial } from "@/shared/hooks/useSessionStorageInicial";
+import { setCodigoDocente } from "@/shared/store/claseSlice";
+import { useAppDispatch, useAppSelector } from "@/shared/store/store";
 import type { ParticipanteConectado, Sesion, SesionCompleta, WhitelistUrl } from "@/shared/types/sesiones";
 import { useRegistroClase } from "../components/RegistroClase";
 import type { EntradaRegistro } from "../lib/registro";
-
-// Igual que el JWT (ver session.ts): sessionStorage es una decisión de
-// alcance para este piloto, no un mecanismo robusto. Sobrevive a un
-// refresh de página pero no a cerrar la pestaña, y no está pensado para
-// varias pestañas del mismo docente en simultáneo.
-export const CLAVE_SESION_ACTIVA = "ens_sesion_activa_codigo";
 
 interface ClaseDocente {
   cursos: Curso[] | undefined;
@@ -49,7 +44,10 @@ export function useClaseDocente(): ClaseDocente {
  */
 export function ClaseDocenteProvider({ children }: { children: ReactNode }) {
   const esDocente = useUsuarioActual().data?.usuario.rol === "docente";
-  const codigoGuardado = useSessionStorageInicial(CLAVE_SESION_ACTIVA);
+  // Clase en curso (Redux, persistida cifrada): sobrevive a recargar o
+  // cerrar la pestaña. Si ya terminó, la consulta de abajo lo detecta.
+  const codigoGuardado = useAppSelector((s) => s.clase.codigoDocente);
+  const dispatch = useAppDispatch();
   // undefined = todavía no se creó ni finalizó nada en esta pestaña (manda
   // lo guardado); null = el docente finalizó la clase.
   const [codigoOverride, setCodigoOverride] = useState<string | null | undefined>(undefined);
@@ -73,7 +71,7 @@ export function ClaseDocenteProvider({ children }: { children: ReactNode }) {
     mutationFn: (cursoId: number) => api.post<{ sesion: Sesion }>("/sesiones", { cursoId }),
     onSuccess: (res) => {
       const { codigo } = res.data.sesion;
-      window.sessionStorage.setItem(CLAVE_SESION_ACTIVA, codigo);
+      dispatch(setCodigoDocente(codigo));
       setCodigoOverride(codigo);
     },
   });
@@ -81,7 +79,7 @@ export function ClaseDocenteProvider({ children }: { children: ReactNode }) {
   const finalizarSesion = useMutation({
     mutationFn: () => api.post(`/sesiones/${codigoActivo}/finalizar`),
     onSuccess: () => {
-      window.sessionStorage.removeItem(CLAVE_SESION_ACTIVA);
+      dispatch(setCodigoDocente(null));
       setCodigoOverride(null);
     },
   });

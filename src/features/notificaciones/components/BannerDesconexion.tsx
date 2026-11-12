@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { useNotificaciones } from "../hooks/useNotificaciones";
+import { textoClase, useNotificaciones } from "../hooks/useNotificaciones";
 
 // La única alerta que interrumpe: un alumno se desconectó. Franja roja
 // bajo la barra superior mientras la alerta siga abierta (desaparece sola
@@ -25,7 +25,7 @@ export function BannerDesconexion() {
         <span aria-hidden="true" className="size-2.5 shrink-0 animate-pulse rounded-full bg-arena" />
         <p className="min-w-0 flex-1 truncate text-sm font-semibold">
           {texto}
-          {primero!.sesionCodigo && <span className="font-normal text-arena/75"> · clase {primero!.sesionCodigo}</span>}
+          {textoClase(primero!) && <span className="font-normal text-arena/75"> · {textoClase(primero!)}</span>}
         </p>
         <button
           type="button"

@@ -6,6 +6,7 @@ import { MensajeEstado } from "@/shared/components/MensajeEstado";
 import {
   SEVERIDAD,
   TITULO_NOTIFICACION,
+  textoClase,
   textoCompleto,
   useNotificaciones,
   type Notificacion,
@@ -43,7 +44,7 @@ function Fila({ n }: { n: Notificacion }) {
         </div>
         <p className={`text-sm ${abierta ? "text-carbon/80" : "text-carbon/55"}`}>
           {n.alumnoNombre ? n.mensaje : textoCompleto(n)}
-          {n.sesionCodigo && <span className="text-carbon/45"> · clase {n.sesionCodigo}</span>}
+          {textoClase(n) && <span className="text-carbon/45"> · {textoClase(n)}</span>}
         </p>
       </div>
     </li>

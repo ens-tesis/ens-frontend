@@ -24,6 +24,7 @@ export interface Notificacion {
   alumnoNombre: string | null;
   sesionId: number | null;
   sesionCodigo: string | null;
+  curso: string | null;
   tipo: TipoNotificacion;
   mensaje: string;
   createdAt: string;
@@ -55,6 +56,10 @@ export const SEVERIDAD: Record<TipoNotificacion, Severidad> = {
 export const textoCompleto = (n: Notificacion) =>
   n.alumnoNombre ? `${n.alumnoNombre} ${n.mensaje}` : n.mensaje;
 
+// "clase 1° A"; el código solo si la clase no tiene curso.
+export const textoClase = (n: Notificacion): string | null =>
+  n.curso ? `clase ${n.curso}` : n.sesionCodigo ? `clase ${n.sesionCodigo}` : null;
+
 const CLAVE = ["notificaciones"];
 const WS_BASE_URL = process.env.NEXT_PUBLIC_WS_URL ?? "ws://localhost:3001";
 const BACKOFF_MAX_MS = 30000;
@@ -79,7 +84,7 @@ function notificacionSistema(n: Notificacion): void {
       return;
     }
     await reg.showNotification(TITULO_NOTIFICACION[n.tipo], {
-      body: `${textoCompleto(n)} · clase ${n.sesionCodigo}`,
+      body: [textoCompleto(n), textoClase(n)].filter(Boolean).join(" · "),
       icon: "/icon.svg",
       tag,
       data: { url: window.location.pathname },

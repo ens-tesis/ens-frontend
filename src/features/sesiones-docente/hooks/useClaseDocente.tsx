@@ -26,7 +26,7 @@ interface ClaseDocente {
   cursoDeLaClase: Curso | null;
   // Matriculados del curso que todavía no entraron.
   faltan: { id: number; nombre: string; apellido: string }[];
-  crearSesion: UseMutationResult<unknown, Error, number>;
+  crearSesion: UseMutationResult<unknown, Error, { cursoId: number; materia: string }>;
   finalizarSesion: UseMutationResult<unknown, Error, void>;
 }
 
@@ -68,7 +68,7 @@ export function ClaseDocenteProvider({ children }: { children: ReactNode }) {
   const planillaCurso = useAsistencia(codigoActivo ? (sesion.data?.sesion.cursoId ?? null) : null);
 
   const crearSesion = useMutation({
-    mutationFn: (cursoId: number) => api.post<{ sesion: Sesion }>("/sesiones", { cursoId }),
+    mutationFn: (nueva: { cursoId: number; materia: string }) => api.post<{ sesion: Sesion }>("/sesiones", nueva),
     onSuccess: (res) => {
       const { codigo } = res.data.sesion;
       dispatch(setCodigoDocente(codigo));

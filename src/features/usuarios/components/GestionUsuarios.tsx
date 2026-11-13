@@ -11,6 +11,7 @@ import { Icono } from "@/shared/components/Icono";
 import { MensajeEstado } from "@/shared/components/MensajeEstado";
 import { CLASE_FILA } from "@/shared/components/Tarjeta";
 import { mensajeDeError } from "@/shared/lib/errores";
+import { RestablecerPassword } from "./RestablecerPassword";
 
 const ROLES: Rol[] = ["admin", "director", "preceptor", "docente", "alumno"];
 
@@ -123,7 +124,8 @@ function ListaUsuarios({ actor, altaHref }: { actor: Usuario; altaHref: string }
                   </div>
                 </div>
                 {editable ? (
-                  <div className="flex items-center gap-2">
+                  <div className="flex flex-wrap items-center gap-2">
+                    <RestablecerPassword usuarioId={u.id} nombre={`${u.nombre} ${u.apellido ?? ""}`.trim()} />
                     {u.tienePasskey && (
                       <button
                         type="button"

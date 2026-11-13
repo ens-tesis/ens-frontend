@@ -12,6 +12,7 @@ export interface Sesion {
   codigo: string;
   docenteId: number;
   cursoId: number | null;
+  materia: string | null;
   gracePeriodSeg: number;
   heartbeatIntervaloSeg: number;
   activa: boolean;

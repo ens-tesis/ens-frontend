@@ -57,6 +57,7 @@ const MENSAJES_CIERRE: Record<number, string> = {
   4004: "No encontramos una sesión con ese código.",
   4010: "El docente finalizó la clase.",
   4403: "No tenés permiso para conectarte a esta sesión.",
+  4404: "Esta clase es de otro curso. Revisá el código o pedile a preceptoría que te agregue al curso.",
 };
 
 const MENSAJE_CIERRE_DESCONOCIDO = "Se perdió la conexión. Intentá de nuevo.";

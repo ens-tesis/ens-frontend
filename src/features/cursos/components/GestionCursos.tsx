@@ -3,6 +3,7 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
 import type { Usuario } from "@/features/auth";
+import { RestablecerPassword } from "@/features/usuarios";
 import { Volver } from "@/shared/components/Volver";
 import { useCursos } from "../hooks/useCursos";
 import type { Curso, PersonaResumen } from "../types";
@@ -350,7 +351,7 @@ function FichaCurso({ curso, esPreceptor, onVolver }: { curso: Curso; esPrecepto
         ) : (
           <ol className="gap-x-6 md:columns-2">
             {lista.map((a, i) => (
-              <li key={a.id} className="flex break-inside-avoid items-center gap-3 border-b border-carbon/[0.06] py-1.5">
+              <li key={a.id} className="flex break-inside-avoid flex-wrap items-center gap-3 border-b border-carbon/[0.06] py-1.5">
                 <span className="w-6 shrink-0 text-right font-mono text-xs text-carbon/45 tabular-nums">{i + 1}</span>
                 <span className="min-w-0 flex-1">
                   <span className="block truncate text-sm font-medium text-carbon">
@@ -358,6 +359,7 @@ function FichaCurso({ curso, esPreceptor, onVolver }: { curso: Curso; esPrecepto
                   </span>
                   <span className="block truncate text-xs text-carbon/50">{a.email}</span>
                 </span>
+                <RestablecerPassword usuarioId={a.id} nombre={`${a.nombre} ${a.apellido}`} />
                 <BotonQuitar nombre={`${a.nombre} ${a.apellido}`} onClick={() => quitar("alumnos")(a.id)} />
               </li>
             ))}

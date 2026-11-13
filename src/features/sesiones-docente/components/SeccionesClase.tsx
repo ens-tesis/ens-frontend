@@ -77,6 +77,7 @@ export function AvisosClase() {
 function NuevaClase() {
   const { cursos, crearSesion } = useClaseDocente();
   const [cursoId, setCursoId] = useState("");
+  const [materia, setMateria] = useState("");
   return (
     <div className="space-y-4">
       <section className="pizarron max-w-xl space-y-5 rounded-[2rem] p-6 text-arena shadow-flotante sm:p-8">
@@ -94,6 +95,18 @@ function NuevaClase() {
             ))}
           </select>
         </label>
+        {/* Un docente puede dar dos materias al mismo curso el mismo día:
+            cada materia es su propia clase (y su propia asistencia). */}
+        <label className="block space-y-1.5">
+          <span className={`${CLASE_ETIQUETA} text-arena/80`}>Materia</span>
+          <input
+            value={materia}
+            onChange={(e) => setMateria(e.target.value)}
+            maxLength={80}
+            placeholder="Ej.: Matemática"
+            className={CLASE_CONTROL}
+          />
+        </label>
         {cursos?.length === 0 && (
           <p className="rounded-xl bg-arena/15 px-3 py-2 text-sm text-arena">
             Todavía no tenés cursos asignados. Pedile a preceptoría o dirección que te asignen.
@@ -101,8 +114,8 @@ function NuevaClase() {
         )}
         <Boton
           cargando={crearSesion.isPending}
-          disabled={!cursoId}
-          onClick={() => crearSesion.mutate(Number(cursoId))}
+          disabled={!cursoId || !materia.trim()}
+          onClick={() => crearSesion.mutate({ cursoId: Number(cursoId), materia: materia.trim() })}
           className="w-full sm:w-auto"
         >
           Empezar clase
@@ -119,13 +132,13 @@ function NuevaClase() {
 }
 
 function ClaseEnVivo({ codigo }: { codigo: string }) {
-  const { socket, participantes, cursoDeLaClase, finalizarSesion } = useClaseDocente();
+  const { socket, participantes, cursoDeLaClase, sesion, finalizarSesion } = useClaseDocente();
   const [confirmarFin, setConfirmarFin] = useState(false);
   return (
     <div className="space-y-4">
       <CodigoSesion
         codigo={codigo}
-        curso={cursoDeLaClase?.nombre ?? null}
+        curso={[cursoDeLaClase?.nombre, sesion.data?.sesion.materia].filter(Boolean).join(" · ") || null}
         enVivo={socket.estado === "conectado"}
         estado={socket.estado === "conectado" ? "En vivo" : socket.estado === "cerrado" ? "Desconectado" : "Reconectando..."}
       />

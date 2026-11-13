@@ -146,6 +146,12 @@ function conectarSesionSocket(
       }
       if (mensaje.type === "whitelist_update") {
         handlers.onWhitelist(mensaje.whitelist);
+        // Acuse apenas aplicada: el backend mide la ida y vuelta (≤500 ms).
+        // Al docente también le llega; el backend lo ignora.
+        if (mensaje.envioId) {
+          const ack: PresenciaClienteMessage = { type: "ack_whitelist", envioId: mensaje.envioId };
+          socket.send(JSON.stringify(ack));
+        }
       } else if (mensaje.type === "participantes_update") {
         handlers.onParticipantes(mensaje.participantes);
       } else if (mensaje.type === "contingencia_update") {

@@ -4,6 +4,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { useEffect, useState } from "react";
 import { Provider } from "react-redux";
 import { PersistGate } from "redux-persist/integration/react";
+import { escucharErroresGlobales } from "../lib/reportarErrores";
 import { crearStore } from "../store/store";
 
 export function Providers({ children }: { children: React.ReactNode }) {
@@ -28,6 +29,9 @@ export function Providers({ children }: { children: React.ReactNode }) {
       );
     }
   }, []);
+
+  // Errores de JS sin capturar → Auditoría del admin.
+  useEffect(escucharErroresGlobales, []);
 
   return (
     <Provider store={store}>

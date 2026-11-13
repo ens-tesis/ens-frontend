@@ -69,6 +69,9 @@ export interface WhitelistUpdateMessage {
   type: "whitelist_update";
   sesionCodigo: string;
   whitelist: WhitelistUrl[];
+  // Solo en los cambios: se devuelve en un ack_whitelist para que el
+  // backend mida la latencia de propagación (latenciaWhitelist.ts).
+  envioId?: string;
 }
 
 export interface ParticipantesUpdateMessage {
@@ -86,8 +89,9 @@ export interface ContingenciaUpdateMessage {
 
 export type SesionWsMessage = WhitelistUpdateMessage | ParticipantesUpdateMessage | ContingenciaUpdateMessage;
 
-// Único mensaje que manda el cliente (alumno) hoy: reporte de foco de la
-// pestaña. Ver useSesionSocket.ts (enviarMensaje) y sesiones.ws.ts (backend).
+// Lo que manda el cliente (alumno): foco de la pestaña, geometría y el
+// acuse de cada cambio de whitelist. Ver useSesionSocket.ts y sesiones.ws.ts.
 export type PresenciaClienteMessage =
   | { type: "presencia"; estado: "conectado" | "fuera_de_foco" }
-  | { type: "geometria"; reducida: boolean };
+  | { type: "geometria"; reducida: boolean }
+  | { type: "ack_whitelist"; envioId: string };

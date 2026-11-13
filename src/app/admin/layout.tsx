@@ -19,6 +19,12 @@ const SECCIONES: SeccionPanel[] = [
     icono: "colegio",
     descripcion: "Las métricas de cada colegio, sus directores, y entrar a operarlo o eliminarlo.",
   },
+  {
+    segmento: "auditoria",
+    etiqueta: "Auditoría",
+    icono: "auditoria",
+    descripcion: "Latencia de la whitelist (objetivo ≤500 ms), errores del sistema y acciones administrativas.",
+  },
 ];
 
 // El admin no pertenece a ningún colegio: los crea y los supervisa.
@@ -29,7 +35,7 @@ export default function AdminLayout({ children }: LayoutProps<"/admin">) {
       base="admin"
       area="Administración"
       secciones={SECCIONES}
-      ordenInferior={["crear-colegio", "inicio", "colegios"]}
+      ordenInferior={["crear-colegio", "inicio", "colegios", "auditoria"]}
       conNotificaciones={false}
     >
       {children}

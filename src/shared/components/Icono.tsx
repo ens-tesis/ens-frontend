@@ -5,6 +5,7 @@ const PATHS = {
   colegio: "M3 21h18M5 21V8l7-5 7 5v13M9 21v-5h6v5M10 10h4M10 13h4",
   metricas: "M4 20V10M10 20V4M16 20v-7M22 20H2",
   asistencia: "M9 11l3 3L22 4M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11",
+  auditoria: "M12 3l8 3v6c0 4.5-3.4 8.2-8 9-4.6-.8-8-4.5-8-9V6zM9 12l2 2 4-4",
   historial: "M3 12a9 9 0 1 0 3-6.7L3 8M3 3v5h5M12 7v5l3 2",
   cursos: "M3 7l9-4 9 4-9 4-9-4zM7 9v5c0 1.7 2.2 3 5 3s5-1.3 5-3V9M21 7v6",
   usuarios:

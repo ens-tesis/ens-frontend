@@ -20,6 +20,12 @@ const SECCIONES: SeccionPanel[] = [
     descripcion: "Las métricas de cada colegio, sus directores, y entrar a operarlo o eliminarlo.",
   },
   {
+    segmento: "seguimiento",
+    etiqueta: "Seguimiento",
+    icono: "seguimiento",
+    descripcion: "Registrá todo lo que pasa en un colegio durante un período (por ejemplo, un día de prueba) y generá su informe.",
+  },
+  {
     segmento: "auditoria",
     etiqueta: "Auditoría",
     icono: "auditoria",
@@ -35,7 +41,7 @@ export default function AdminLayout({ children }: LayoutProps<"/admin">) {
       base="admin"
       area="Administración"
       secciones={SECCIONES}
-      ordenInferior={["crear-colegio", "inicio", "colegios", "auditoria"]}
+      ordenInferior={["crear-colegio", "inicio", "colegios", "seguimiento", "auditoria"]}
       conNotificaciones={false}
     >
       {children}

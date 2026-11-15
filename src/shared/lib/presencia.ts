@@ -41,3 +41,8 @@ export const ETIQUETA_DESCONEXION: Record<string, string> = {
   GRACE_EXPIRED: "Venció el período de gracia",
   VOLUNTARY_HIDDEN: "Ocultó la pestaña",
 };
+
+// "1 alumno" / "3 alumnos".
+export function cantidad(n: number, uno: string, varios: string): string {
+  return `${n} ${n === 1 ? uno : varios}`;
+}

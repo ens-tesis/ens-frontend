@@ -31,7 +31,7 @@ export function CeldaMarca({ m, className = "" }: { m: Marca<MarcaDia>; classNam
   );
 }
 
-const hora = (iso: string) => new Date(iso).toLocaleTimeString("es-AR", { hour: "2-digit", minute: "2-digit" });
+const hora = (iso: string) => new Date(iso).toLocaleTimeString("es-AR", { hour: "2-digit", minute: "2-digit", hour12: false });
 const fechaLarga = (iso: string) =>
   new Date(iso).toLocaleDateString("es-AR", { weekday: "long", day: "numeric", month: "long" });
 
@@ -122,7 +122,7 @@ export function AsistenciaClase({ codigo, volver }: { codigo: string; volver?: R
           <p className="text-xs font-semibold tracking-[0.12em] text-carbon/50 uppercase">
             {clase.curso ?? "Clase sin curso"} · {clase.codigo}
           </p>
-          <h2 className="font-display text-2xl font-bold text-carbon capitalize">{fechaLarga(clase.iniciadaAt)}</h2>
+          <h2 className="font-display text-2xl font-bold text-carbon first-letter:uppercase">{fechaLarga(clase.iniciadaAt)}</h2>
           <p className="text-sm text-carbon/65">
             {hora(clase.iniciadaAt)}
             {clase.finalizadaAt ? ` a ${hora(clase.finalizadaAt)}` : ""} · {clase.docente}

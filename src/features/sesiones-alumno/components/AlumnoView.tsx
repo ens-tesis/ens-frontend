@@ -264,9 +264,11 @@ export default function AlumnoView({ codigoQr }: { codigoQr: string | null }) {
       secciones={[]}
       titulo={codigoConectado ? "Tu clase" : `Hola, ${usuario.nombre}`}
       descripcion={
-        codigoConectado
-          ? "Tocá un sitio para abrirlo. Solo podés usar los que habilitó tu docente."
-          : "Ingresá el código que te dio tu docente para unirte a la clase."
+        !codigoConectado
+          ? "Ingresá el código que te dio tu docente para unirte a la clase."
+          : socket.estado === "cerrado" && socket.cierre
+            ? "No estás conectado a ninguna clase."
+            : "Tocá un sitio para abrirlo. Solo podés usar los que habilitó tu docente."
       }
     >
       {!codigoConectado ? (

@@ -11,6 +11,7 @@ import { MensajeEstado } from "@/shared/components/MensajeEstado";
 import { CLASE_FILA_INTERACTIVA, Tarjeta } from "@/shared/components/Tarjeta";
 import { Volver } from "@/shared/components/Volver";
 import { mensajeDeError } from "@/shared/lib/errores";
+import { cantidad } from "@/shared/lib/presencia";
 
 type Veredicto = "bien" | "atencion" | "mal";
 
@@ -86,7 +87,7 @@ export function Seguimiento() {
                     </span>
                     <span className="block text-carbon/65">
                       {h.resumen
-                        ? `${duracion(h.resumen.duracionMin)} · ${h.resumen.clases} clases · ${h.resumen.alumnos} alumnos · ${h.resumen.incidentes} alertas`
+                        ? `${duracion(h.resumen.duracionMin)} · ${cantidad(h.resumen.clases, "clase", "clases")} · ${cantidad(h.resumen.alumnos, "alumno", "alumnos")} · ${cantidad(h.resumen.incidentes, "alerta", "alertas")}`
                         : "Sin resumen"}
                       {h.nota ? ` · ${h.nota}` : ""}
                     </span>

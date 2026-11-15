@@ -68,6 +68,23 @@ const fechaHora = (iso: string) =>
   new Date(iso).toLocaleString("es-AR", { dateStyle: "short", timeStyle: "medium", hour12: false });
 const ms = (v: number | null) => (v === null ? "—" : `${v} ms`);
 
+// Pedidos lentos agrupados por ruta (sin códigos de clase ni ids): con un
+// curso entero entrando a la vez eran cientos de filas sueltas.
+function agruparLentas(lentas: HttpLenta[]) {
+  const grupos = new Map<string, { ruta: string; cantidad: number; max: number; ultima: string }>();
+  for (const h of lentas) {
+    const ruta = `${h.detalle.metodo ?? ""} ${(h.detalle.ruta ?? "")
+      .replace(/\/[A-Z0-9]{6}(?=\/|$)/g, "/:codigo")
+      .replace(/\/\d+(?=\/|$)/g, "/:id")} → ${h.detalle.status ?? ""}`;
+    const g = grupos.get(ruta) ?? { ruta, cantidad: 0, max: 0, ultima: h.fecha };
+    g.cantidad += 1;
+    g.max = Math.max(g.max, h.ms);
+    if (h.fecha > g.ultima) g.ultima = h.fecha;
+    grupos.set(ruta, g);
+  }
+  return [...grupos.values()].sort((a, b) => b.cantidad - a.cantidad);
+}
+
 // Sección Auditoría del admin: latencia de la whitelist (objetivo ≤500 ms),
 // errores de backend y navegadores, y acciones administrativas.
 export function Auditoria() {
@@ -204,13 +221,11 @@ function Latencia({ periodo }: { periodo: Periodo }) {
             <Tarjeta className="space-y-3">
               <h2 className="font-display text-xl font-bold text-carbon">Pedidos HTTP lentos (más de 1 s)</h2>
               <ul className="space-y-2">
-                {d.httpLentas.map((h, i) => (
-                  <li key={i} className={`${CLASE_FILA} flex flex-wrap justify-between gap-2 p-3 text-sm`}>
-                    <span className="min-w-0 break-all font-mono text-carbon">
-                      {h.detalle.metodo} {h.detalle.ruta} → {h.detalle.status}
-                    </span>
+                {agruparLentas(d.httpLentas).map((g) => (
+                  <li key={g.ruta} className={`${CLASE_FILA} flex flex-wrap justify-between gap-2 p-3 text-sm`}>
+                    <span className="min-w-0 break-all font-mono text-carbon">{g.ruta}</span>
                     <span className="text-carbon/70 tabular-nums">
-                      {h.ms} ms · {fechaHora(h.fecha)}
+                      {g.cantidad} {g.cantidad === 1 ? "vez" : "veces"} · máx {g.max} ms · última {fechaHora(g.ultima)}
                     </span>
                   </li>
                 ))}

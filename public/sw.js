@@ -173,6 +173,22 @@ const TITULOS = {
   contingencia: "Modo contingencia",
 };
 
+// "No se unió" llega de a una por alumno, todas juntas a los 5 min de
+// abierta la clase: se agrupan en una sola notificación por clase en vez
+// de apilar 25 en el celular. Misma lógica en useNotificaciones.ts.
+// Llegan todas en el mismo instante: se procesan en fila (cola) para que
+// cada una lea la notificación que dejó la anterior.
+let cola = Promise.resolve();
+async function agruparNoUnidos(tag, n, texto) {
+  const previa = (await self.registration.getNotifications({ tag }))[0];
+  const nombres = [...new Set([...(previa?.data?.nombres ?? []), n.alumnoNombre].filter(Boolean))];
+  const body =
+    nombres.length > 1
+      ? `${nombres.length} alumnos no se unieron: ${nombres.slice(0, 3).join(", ")}${nombres.length > 3 ? "…" : ""}`
+      : texto;
+  return { body, nombres };
+}
+
 self.addEventListener("push", (event) => {
   let n;
   try {
@@ -181,19 +197,28 @@ self.addEventListener("push", (event) => {
     return;
   }
   if (!n) return;
-  event.waitUntil(
-    self.clients.matchAll({ type: "window", includeUncontrolled: true }).then((ventanas) => {
+  const mostrar = () =>
+    self.clients.matchAll({ type: "window", includeUncontrolled: true }).then(async (ventanas) => {
       if (ventanas.some((v) => v.visibilityState === "visible")) return;
-      const texto = n.alumnoNombre ? `${n.alumnoNombre} ${n.mensaje}` : n.mensaje;
+      let texto = n.alumnoNombre ? `${n.alumnoNombre} ${n.mensaje}` : n.mensaje;
       const clase = n.curso ? `clase ${n.curso}` : n.sesionCodigo ? `clase ${n.sesionCodigo}` : null;
+      const agrupada = n.tipo === "no_se_unio";
+      const tag = agrupada ? `ens-${n.sesionId}-no_se_unio` : `ens-${n.sesionId}-${n.alumnoId ?? n.tipo}`;
+      const data = { url: "/" };
+      if (agrupada) {
+        const grupo = await agruparNoUnidos(tag, n, texto);
+        texto = grupo.body;
+        data.nombres = grupo.nombres;
+      }
       return self.registration.showNotification(TITULOS[n.tipo] ?? "ENS", {
         body: [texto, clase].filter(Boolean).join(" · "),
         icon: "/icon-192.png",
-        tag: `ens-${n.sesionId}-${n.alumnoId ?? n.tipo}`,
-        data: { url: "/" },
+        tag,
+        data,
       });
-    }),
-  );
+    });
+  cola = cola.then(mostrar, mostrar);
+  event.waitUntil(cola);
 });
 
 // Al tocar la notificación: enfoca una pestaña/ventana del ENS ya abierta

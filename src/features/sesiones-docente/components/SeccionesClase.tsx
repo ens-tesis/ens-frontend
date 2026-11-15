@@ -5,7 +5,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useState, type ReactNode } from "react";
 import { Boton } from "@/shared/components/Boton";
-import { CLASE_CONTROL, CLASE_ETIQUETA } from "@/shared/components/Campo";
+import { CLASE_CONTROL } from "@/shared/components/Campo";
 import { MensajeEstado } from "@/shared/components/MensajeEstado";
 import { Tarjeta } from "@/shared/components/Tarjeta";
 import type { EstadoPresencia } from "@/shared/types/sesiones";
@@ -83,7 +83,7 @@ function NuevaClase() {
       <section className="pizarron max-w-xl space-y-5 rounded-[2rem] p-6 text-arena shadow-flotante sm:p-8">
         <p className="font-display text-2xl font-bold sm:text-3xl">¿Con qué curso das clase?</p>
         <label className="block space-y-1.5">
-          <span className={`${CLASE_ETIQUETA} text-arena/80`}>Curso</span>
+          <span className="block text-sm font-medium text-arena/80">Curso</span>
           <select value={cursoId} onChange={(e) => setCursoId(e.target.value)} className={CLASE_CONTROL}>
             <option value="" disabled>
               Elegí un curso
@@ -98,7 +98,7 @@ function NuevaClase() {
         {/* Un docente puede dar dos materias al mismo curso el mismo día:
             cada materia es su propia clase (y su propia asistencia). */}
         <label className="block space-y-1.5">
-          <span className={`${CLASE_ETIQUETA} text-arena/80`}>Materia</span>
+          <span className="block text-sm font-medium text-arena/80">Materia</span>
           <input
             value={materia}
             onChange={(e) => setMateria(e.target.value)}

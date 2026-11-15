@@ -24,7 +24,7 @@ function cuando(iso: string, abierta: boolean): string {
   const min = Math.round((Date.now() - new Date(iso).getTime()) / 60_000);
   if (abierta && min < 1) return "ahora";
   if (abierta && min < 60) return `hace ${min} min`;
-  return new Date(iso).toLocaleTimeString("es-AR", { hour: "2-digit", minute: "2-digit" });
+  return new Date(iso).toLocaleTimeString("es-AR", { hour: "2-digit", minute: "2-digit", hour12: false });
 }
 
 function Fila({ n }: { n: Notificacion }) {

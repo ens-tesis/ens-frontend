@@ -11,7 +11,7 @@ import { Icono } from "@/shared/components/Icono";
 import { MensajeEstado } from "@/shared/components/MensajeEstado";
 import { Pestanas } from "@/shared/components/Pestanas";
 import { CLASE_FILA, CLASE_FILA_INTERACTIVA, Tarjeta } from "@/shared/components/Tarjeta";
-import { COLOR_ESTADO, ETIQUETA_DESCONEXION, ETIQUETA_ESTADO, formatoDuracion } from "@/shared/lib/presencia";
+import { cantidad, COLOR_ESTADO, ETIQUETA_DESCONEXION, ETIQUETA_ESTADO, formatoDuracion } from "@/shared/lib/presencia";
 import type {
   ConteosEventos,
   EventoPresencia,
@@ -22,8 +22,8 @@ import type {
 import { useCursos } from "@/features/cursos";
 
 const fechaHora = (iso: string) =>
-  new Date(iso).toLocaleString("es-AR", { dateStyle: "short", timeStyle: "short" });
-const hora = (iso: string) => new Date(iso).toLocaleTimeString("es-AR", { timeStyle: "medium" });
+  new Date(iso).toLocaleString("es-AR", { dateStyle: "short", timeStyle: "short", hour12: false });
+const hora = (iso: string) => new Date(iso).toLocaleTimeString("es-AR", { timeStyle: "medium", hour12: false });
 
 // Infracción pedagógica vs incidente técnico (anteproyecto: filtrado por
 // tipo de desconexión).
@@ -56,14 +56,14 @@ function params(periodo: Periodo, extra: Record<string, string | number | undefi
 function Conteos({ c }: { c: ConteosEventos }) {
   return (
     <div className="flex flex-wrap gap-1.5">
-      <Badge variante={c.distracciones ? "rojo" : "celeste"}>{c.distracciones} distracciones</Badge>
+      <Badge variante={c.distracciones ? "rojo" : "celeste"}>{cantidad(c.distracciones, "distracción", "distracciones")}</Badge>
       {c.segundosFueraDeFoco > 0 && (
         <Badge variante="rojo">{formatoDuracion(c.segundosFueraDeFoco)} fuera de foco</Badge>
       )}
       <Badge variante={c.ausenciasDigitales ? "rojo" : "celeste"}>
-        {c.ausenciasDigitales} ausencias digitales
+        {cantidad(c.ausenciasDigitales, "ausencia digital", "ausencias digitales")}
       </Badge>
-      <Badge variante={c.cortesDeRed ? "amarillo" : "celeste"}>{c.cortesDeRed} cortes de red</Badge>
+      <Badge variante={c.cortesDeRed ? "amarillo" : "celeste"}>{cantidad(c.cortesDeRed, "corte de red", "cortes de red")}</Badge>
     </div>
   );
 }
@@ -167,7 +167,7 @@ export function Historial() {
                   <span className="block">
                     <span className="block truncate font-semibold text-carbon">{s.curso ?? "Sin curso"}</span>
                     <span className="block truncate text-xs text-carbon/60">
-                      {s.docente} · {fechaHora(s.iniciadaAt)} · {s.participantes} alumnos
+                      {s.docente} · {fechaHora(s.iniciadaAt)} · {cantidad(s.participantes, "alumno", "alumnos")}
                     </span>
                   </span>
                   <Conteos c={s} />

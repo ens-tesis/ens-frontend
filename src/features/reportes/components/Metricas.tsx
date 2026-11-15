@@ -22,7 +22,8 @@ const COLUMNAS: [keyof FilaMetricas, string][] = [
   ["promedioAlumnos", "Alumnos por clase"],
   ["tasaDistraccion", "Distracciones por alumno"],
   ["alumnosUnicos", "Alumnos únicos"],
-  ["participaciones", "Participaciones"],
+  // Participaciones queda solo en el CSV: es el divisor de las dos tasas y
+  // con ella la tabla no entraba en una notebook.
   ["distracciones", "Distracciones"],
   ["segundosFueraDeFoco", "Tiempo fuera de foco"],
   ["ausenciasDigitales", "Ausencias digitales"],

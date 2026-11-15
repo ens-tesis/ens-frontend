@@ -76,21 +76,38 @@ function leerPermiso(): Permiso {
 // Worker y no con `new Notification()`: en Android el constructor no está
 // permitido. Una por alumno y clase (tag): la escalada reemplaza a la
 // anterior en vez de apilarse, y resolverse la cierra.
+// "No se unió" se agrupa en una sola por clase (llegan todas juntas a los
+// 5 min); que un alumno entre tarde no la cierra: la campana tiene el
+// detalle. Misma lógica que el evento push de public/sw.js. En fila
+// (cola) para que cada una lea la que dejó la anterior.
+let cola: Promise<void> = Promise.resolve();
 function notificacionSistema(n: Notificacion): void {
   if (leerPermiso() !== "granted" || !("serviceWorker" in navigator)) return;
-  const tag = `ens-${n.sesionId}-${n.alumnoId ?? n.tipo}`;
-  void navigator.serviceWorker.ready.then(async (reg) => {
+  const agrupada = n.tipo === "no_se_unio";
+  const tag = agrupada ? `ens-${n.sesionId}-no_se_unio` : `ens-${n.sesionId}-${n.alumnoId ?? n.tipo}`;
+  cola = cola.then(() => navigator.serviceWorker.ready).then(async (reg) => {
     if (n.resueltaAt || !document.hidden) {
-      for (const abierta of await reg.getNotifications({ tag })) abierta.close();
+      if (!agrupada || !document.hidden) for (const abierta of await reg.getNotifications({ tag })) abierta.close();
       return;
     }
+    let texto = textoCompleto(n);
+    const data: { url: string; nombres?: string[] } = { url: window.location.pathname };
+    if (agrupada) {
+      const previa = (await reg.getNotifications({ tag }))[0];
+      const previos: string[] = previa?.data?.nombres ?? [];
+      const nombres = [...new Set([...previos, n.alumnoNombre].filter((x): x is string => !!x))];
+      if (nombres.length > 1) {
+        texto = `${nombres.length} alumnos no se unieron: ${nombres.slice(0, 3).join(", ")}${nombres.length > 3 ? "…" : ""}`;
+      }
+      data.nombres = nombres;
+    }
     await reg.showNotification(TITULO_NOTIFICACION[n.tipo], {
-      body: [textoCompleto(n), textoClase(n)].filter(Boolean).join(" · "),
+      body: [texto, textoClase(n)].filter(Boolean).join(" · "),
       icon: "/icon.svg",
       tag,
-      data: { url: window.location.pathname },
+      data,
     });
-  });
+  }).catch(() => {});
 }
 
 // Canal en vivo (ws://.../?canal=notificaciones&pase=), con el mismo

@@ -7,6 +7,7 @@ import { api } from "@/shared/api/client";
 import { Icono } from "@/shared/components/Icono";
 import { MensajeEstado } from "@/shared/components/MensajeEstado";
 import { CLASE_FILA, Tarjeta } from "@/shared/components/Tarjeta";
+import { cantidad } from "@/shared/lib/presencia";
 import { HistorialAlumno } from "./Historial";
 
 function AlumnosDelCurso({ curso, onAlumno }: { curso: Curso; onAlumno: (a: PersonaResumen) => void }) {
@@ -90,7 +91,7 @@ export function MisCursos() {
                   {c.turno ? ` · ${c.turno}` : ""}
                 </span>
               </span>
-              <span className="block text-xs text-carbon/60">{c.cantidadAlumnos} alumnos</span>
+              <span className="block text-xs text-carbon/60">{cantidad(c.cantidadAlumnos, "alumno", "alumnos")}</span>
             </span>
             <Icono
               nombre="flecha"

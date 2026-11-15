@@ -7,7 +7,7 @@ import { Tarjeta } from "@/shared/components/Tarjeta";
 import { useClasesDeHoy } from "../hooks/useAsistencia";
 import { AsistenciaClase } from "./AsistenciaClase";
 
-const hora = (iso: string) => new Date(iso).toLocaleTimeString("es-AR", { hour: "2-digit", minute: "2-digit" });
+const hora = (iso: string) => new Date(iso).toLocaleTimeString("es-AR", { hour: "2-digit", minute: "2-digit", hour12: false });
 
 // Docente: la asistencia de su clase de hoy (si abrió varias, elige cuál).
 export function AsistenciaHoy() {

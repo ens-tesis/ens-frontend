@@ -53,7 +53,7 @@ interface ManejadoresConexion {
 const MENSAJES_CIERRE: Record<number, string> = {
   4000: "Faltaron datos para conectarte. Volvé a intentarlo.",
   4001: "Tu sesión expiró. Iniciá sesión de nuevo.",
-  4003: "Esta sesión de clase ya no está activa.",
+  4003: "Esta clase ya terminó. Pedile a tu docente el código de la clase de hoy.",
   4004: "No encontramos una sesión con ese código.",
   4010: "El docente finalizó la clase.",
   4403: "No tenés permiso para conectarte a esta sesión.",

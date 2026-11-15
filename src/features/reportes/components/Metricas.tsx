@@ -19,6 +19,8 @@ const valor = (f: FilaMetricas, k: keyof FilaMetricas) =>
 
 const COLUMNAS: [keyof FilaMetricas, string][] = [
   ["sesiones", "Sesiones"],
+  ["promedioAlumnos", "Alumnos por clase"],
+  ["tasaDistraccion", "Distracciones por alumno"],
   ["alumnosUnicos", "Alumnos únicos"],
   ["participaciones", "Participaciones"],
   ["distracciones", "Distracciones"],

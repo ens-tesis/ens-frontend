@@ -49,6 +49,8 @@ export interface FilaMetricas extends ConteosEventos {
   sesiones: number;
   alumnosUnicos: number;
   participaciones: number;
+  promedioAlumnos: number;
+  tasaDistraccion: number;
 }
 
 export interface ClaseAsistencia {

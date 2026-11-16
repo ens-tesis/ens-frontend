@@ -13,6 +13,7 @@ import { Pestanas } from "@/shared/components/Pestanas";
 import { CLASE_FILA, CLASE_FILA_INTERACTIVA, Tarjeta } from "@/shared/components/Tarjeta";
 import { cantidad, COLOR_ESTADO, ETIQUETA_DESCONEXION, ETIQUETA_ESTADO, formatoDuracion } from "@/shared/lib/presencia";
 import type {
+  AlumnoAusente,
   ConteosEventos,
   EventoPresencia,
   ParticipanteDetalle,
@@ -218,7 +219,7 @@ function DetalleSesion({
     queryKey: ["reportes", "sesion", sesion.id],
     queryFn: () =>
       api
-        .get<{ participantes: ParticipanteDetalle[]; eventos: EventoPresencia[] }>(
+        .get<{ participantes: ParticipanteDetalle[]; eventos: EventoPresencia[]; ausentes: AlumnoAusente[] }>(
           `/reportes/sesiones/${sesion.id}`,
         )
         .then((r) => r.data),
@@ -282,6 +283,30 @@ function DetalleSesion({
             );
           })}
         </ul>
+      )}
+
+      {detalle.data && detalle.data.ausentes.length > 0 && (
+        <Tarjeta className="space-y-3">
+          <h3 className="text-sm font-semibold text-carbon">
+            No se unieron ({detalle.data.ausentes.length})
+          </h3>
+          <ul className="flex flex-wrap gap-2">
+            {detalle.data.ausentes.map((a) => {
+              const nombre = `${a.nombre} ${a.apellido}`.trim();
+              return (
+                <li key={a.alumnoId}>
+                  <button
+                    type="button"
+                    onClick={() => onAlumno(a.alumnoId, nombre)}
+                    className="inline-flex min-h-9 items-center gap-1 rounded-full border border-carbon/15 bg-white px-3 text-sm text-carbon hover:border-carbon/40 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-carbon"
+                  >
+                    {nombre}
+                  </button>
+                </li>
+              );
+            })}
+          </ul>
+        </Tarjeta>
       )}
     </div>
   );

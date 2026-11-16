@@ -35,6 +35,13 @@ export interface ParticipanteDetalle {
   leftAt: string | null;
 }
 
+// Matriculado en el curso de la clase que nunca se unió (RF-07).
+export interface AlumnoAusente {
+  alumnoId: number;
+  nombre: string;
+  apellido: string;
+}
+
 export interface SesionDeAlumno extends ConteosEventos {
   sesionId: number;
   codigo: string;

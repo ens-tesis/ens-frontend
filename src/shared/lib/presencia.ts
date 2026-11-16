@@ -14,13 +14,16 @@ export const ETIQUETA_ESTADO: Record<EstadoPresencia, string> = {
   desconectado: "Desconectado",
 };
 
+// Colores del Anexo D.4 del anteproyecto: fuera de foco amarillo
+// (transitorio, todavía en el período de gracia), ausente rojo, pantalla
+// suspendida gris, sin red azul (celeste es el azul de la paleta).
 export const COLOR_ESTADO: Record<EstadoPresencia, ComponentProps<typeof Badge>["variante"]> = {
   conectado: "verde",
-  fuera_de_foco: "rojo",
+  fuera_de_foco: "amarillo",
   ausente_digital: "rojo",
   actividad_reducida: "ambar",
   pantalla_suspendida: "gris",
-  sin_red: "amarillo",
+  sin_red: "celeste",
   desconectado: "rojo",
 };
 

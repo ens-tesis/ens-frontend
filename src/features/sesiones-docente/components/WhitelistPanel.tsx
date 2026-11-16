@@ -39,11 +39,14 @@ interface AgregarInput {
   url: string;
   nombre?: string | null;
   aceptarModoLectura?: boolean;
+  // Editar: el sitio que reemplaza (PATCH en vez de POST).
+  reemplazaId?: number | null;
 }
 
 interface Bloqueo {
   url: string;
   nombre: string | null;
+  reemplazaId: number | null;
   sugerenciaEmbed: string | null;
   mirrorDisponible: boolean;
   // Explicación del backend de qué link sí sirve (ej. Canva).
@@ -57,6 +60,7 @@ function leerBloqueo(err: unknown): Bloqueo | null {
   return {
     url: "",
     nombre: null,
+    reemplazaId: null,
     sugerenciaEmbed: body.sugerenciaEmbed ?? null,
     mirrorDisponible: Boolean(body.mirrorDisponible),
     ayuda: body.ayuda ?? null,
@@ -77,6 +81,8 @@ export function WhitelistPanel({ codigo, whitelist, cargando, curso }: Whitelist
   const [mensajeExito, setMensajeExito] = useState<string | null>(null);
   const [bloqueo, setBloqueo] = useState<Bloqueo | null>(null);
   const [fijando, setFijando] = useState<number | null>(null);
+  // Sitio que se está editando: el formulario de arriba pasa a "Guardar".
+  const [editando, setEditando] = useState<number | null>(null);
   const fijos = useLinksFijos();
 
   const recientes = useQuery({
@@ -86,21 +92,48 @@ export function WhitelistPanel({ codigo, whitelist, cargando, curso }: Whitelist
   });
 
   const agregar = useMutation({
-    mutationFn: (input: AgregarInput) =>
-      api.post<WhitelistResponse>(`/sesiones/${codigo}/whitelist`, input),
-    onSuccess: () => {
+    mutationFn: ({ reemplazaId, ...input }: AgregarInput) =>
+      reemplazaId
+        ? api.patch<WhitelistResponse>(`/sesiones/${codigo}/whitelist/${reemplazaId}`, input)
+        : api.post<WhitelistResponse>(`/sesiones/${codigo}/whitelist`, input),
+    onSuccess: (_r, input) => {
       setUrl("");
       setNombre("");
       setBloqueo(null);
-      setMensajeExito("URL agregada.");
+      setEditando(null);
+      setMensajeExito(input.reemplazaId ? "Cambios guardados." : "URL agregada.");
       setTimeout(() => setMensajeExito(null), 2500);
       void queryClient.invalidateQueries({ queryKey: ["sesion", codigo] });
     },
     onError: (err, input) => {
       const detalle = leerBloqueo(err);
-      setBloqueo(detalle ? { ...detalle, url: input.url, nombre: input.nombre ?? null } : null);
+      setBloqueo(
+        detalle
+          ? { ...detalle, url: input.url, nombre: input.nombre ?? null, reemplazaId: input.reemplazaId ?? null }
+          : null,
+      );
     },
   });
+
+  function empezarEdicion(item: WhitelistUrl): void {
+    setEditando(item.id);
+    setUrl(item.url);
+    setNombre(item.nombre ?? "");
+    setBloqueo(null);
+    agregar.reset();
+    // El formulario está arriba de la lista: con muchos sitios queda fuera de vista.
+    const campo = document.getElementById("nueva-url");
+    campo?.scrollIntoView({ behavior: "smooth", block: "center" });
+    campo?.focus({ preventScroll: true });
+  }
+
+  function cancelarEdicion(): void {
+    setEditando(null);
+    setUrl("");
+    setNombre("");
+    setBloqueo(null);
+    agregar.reset();
+  }
 
   // Links fijos que aplican a esta clase (los de su curso y los de todos).
   const fijoDe = (u: string) =>
@@ -115,9 +148,9 @@ export function WhitelistPanel({ codigo, whitelist, cargando, curso }: Whitelist
     },
   });
 
-  function intentarAgregar(nuevaUrl: string, nuevoNombre: string | null): void {
+  function intentarAgregar(nuevaUrl: string, nuevoNombre: string | null, reemplazaId: number | null): void {
     setBloqueo(null);
-    agregar.mutate({ url: nuevaUrl, nombre: nuevoNombre });
+    agregar.mutate({ url: nuevaUrl, nombre: nuevoNombre, reemplazaId });
   }
 
   return (
@@ -128,13 +161,13 @@ export function WhitelistPanel({ codigo, whitelist, cargando, curso }: Whitelist
         onSubmit={(e) => {
           e.preventDefault();
           const limpia = url.trim();
-          if (limpia) intentarAgregar(limpia, nombre.trim() || null);
+          if (limpia) intentarAgregar(limpia, nombre.trim() || null, editando);
         }}
       >
         <div className="flex-1">
           <Campo
             id="nueva-url"
-            label="Agregar URL"
+            label={editando ? "Editar URL" : "Agregar URL"}
             type="text"
             placeholder="ejemplo.com"
             value={url}
@@ -153,8 +186,13 @@ export function WhitelistPanel({ codigo, whitelist, cargando, curso }: Whitelist
           />
         </div>
         <Boton type="submit" cargando={agregar.isPending} disabled={!url.trim()}>
-          Agregar
+          {editando ? "Guardar" : "Agregar"}
         </Boton>
+        {editando && (
+          <Boton variante="sutil" onClick={cancelarEdicion}>
+            Cancelar
+          </Boton>
+        )}
       </form>
 
       {bloqueo ? (
@@ -170,7 +208,7 @@ export function WhitelistPanel({ codigo, whitelist, cargando, curso }: Whitelist
               </div>
               <Boton
                 cargando={agregar.isPending}
-                onClick={() => intentarAgregar(bloqueo.sugerenciaEmbed as string, bloqueo.nombre)}
+                onClick={() => intentarAgregar(bloqueo.sugerenciaEmbed as string, bloqueo.nombre, bloqueo.reemplazaId)}
                 className="shrink-0"
               >
                 Usar esta URL
@@ -184,7 +222,14 @@ export function WhitelistPanel({ codigo, whitelist, cargando, curso }: Whitelist
               </div>
               <Boton
                 cargando={agregar.isPending}
-                onClick={() => agregar.mutate({ url: bloqueo.url, nombre: bloqueo.nombre, aceptarModoLectura: true })}
+                onClick={() =>
+                  agregar.mutate({
+                    url: bloqueo.url,
+                    nombre: bloqueo.nombre,
+                    aceptarModoLectura: true,
+                    reemplazaId: bloqueo.reemplazaId,
+                  })
+                }
                 className="shrink-0"
               >
                 Agregar así
@@ -238,7 +283,16 @@ export function WhitelistPanel({ codigo, whitelist, cargando, curso }: Whitelist
                       )}
                     </div>
                   </div>
-                  <div className="grid shrink-0 grid-cols-2 gap-2 sm:flex">
+                  <div className="grid shrink-0 grid-cols-3 gap-2 sm:flex">
+                    {item.modo !== "archivo" && (
+                      <Boton
+                        variante="sutil"
+                        aria-pressed={editando === item.id}
+                        onClick={() => (editando === item.id ? cancelarEdicion() : empezarEdicion(item))}
+                      >
+                        Editar
+                      </Boton>
+                    )}
                     {fijo ? (
                       <Boton
                         variante="sutil"

@@ -6,6 +6,7 @@ import { api } from "@/shared/api/client";
 import { Badge } from "@/shared/components/Badge";
 import { Boton } from "@/shared/components/Boton";
 import { CLASE_CONTROL, CLASE_ETIQUETA } from "@/shared/components/Campo";
+import { Glosario } from "@/shared/components/Glosario";
 import { Icono } from "@/shared/components/Icono";
 import { MensajeEstado } from "@/shared/components/MensajeEstado";
 import { CLASE_FILA_INTERACTIVA, Tarjeta } from "@/shared/components/Tarjeta";
@@ -244,6 +245,7 @@ function EnCurso({ seguimiento: s, onInforme }: { seguimiento: Seguimiento & { v
           </div>
         ))}
       </dl>
+      <Glosario claro />
       <div className="flex flex-wrap gap-3">
         <Boton cargando={finalizar.isPending} onClick={() => finalizar.mutate()}>
           Finalizar y generar informe

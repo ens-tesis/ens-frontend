@@ -6,6 +6,7 @@ import { api } from "@/shared/api/client";
 import { Badge } from "@/shared/components/Badge";
 import { Boton } from "@/shared/components/Boton";
 import { FiltroPeriodo, paramsDePeriodo, PERIODO_VACIO, type Periodo } from "@/shared/components/FiltroPeriodo";
+import { Glosario } from "@/shared/components/Glosario";
 import { Icono } from "@/shared/components/Icono";
 import { MensajeEstado } from "@/shared/components/MensajeEstado";
 import { Pestanas } from "@/shared/components/Pestanas";
@@ -105,6 +106,7 @@ export function Auditoria() {
           onCambiar={setVista}
         />
         <FiltroPeriodo valor={periodo} onChange={setPeriodo} />
+        <Glosario />
       </Tarjeta>
       {vista === "latencia" && <Latencia periodo={periodo} />}
       {vista === "errores" && <Errores periodo={periodo} />}

@@ -78,13 +78,23 @@ function NuevaClase() {
   const { cursos, crearSesion } = useClaseDocente();
   const [cursoId, setCursoId] = useState("");
   const [materia, setMateria] = useState("");
+  // Las que cargó preceptoría para este curso; sin cargar, la escribe a mano.
+  const materias = cursos?.find((c) => String(c.id) === cursoId)?.materias ?? [];
   return (
     <div className="space-y-4">
       <section className="pizarron max-w-xl space-y-5 rounded-[2rem] p-6 text-arena shadow-flotante sm:p-8">
         <p className="font-display text-2xl font-bold sm:text-3xl">¿Con qué curso das clase?</p>
         <label className="block space-y-1.5">
           <span className="block text-sm font-medium text-arena/80">Curso</span>
-          <select value={cursoId} onChange={(e) => setCursoId(e.target.value)} className={CLASE_CONTROL}>
+          <select
+            value={cursoId}
+            onChange={(e) => {
+              setCursoId(e.target.value);
+              const nuevas = cursos?.find((c) => String(c.id) === e.target.value)?.materias ?? [];
+              setMateria(nuevas.length === 1 ? nuevas[0]! : "");
+            }}
+            className={CLASE_CONTROL}
+          >
             <option value="" disabled>
               Elegí un curso
             </option>
@@ -99,13 +109,26 @@ function NuevaClase() {
             cada materia es su propia clase (y su propia asistencia). */}
         <label className="block space-y-1.5">
           <span className="block text-sm font-medium text-arena/80">Materia</span>
-          <input
-            value={materia}
-            onChange={(e) => setMateria(e.target.value)}
-            maxLength={80}
-            placeholder="Ej.: Matemática"
-            className={CLASE_CONTROL}
-          />
+          {materias.length > 0 ? (
+            <select value={materia} onChange={(e) => setMateria(e.target.value)} className={CLASE_CONTROL}>
+              <option value="" disabled>
+                Elegí la materia
+              </option>
+              {materias.map((m) => (
+                <option key={m} value={m}>
+                  {m}
+                </option>
+              ))}
+            </select>
+          ) : (
+            <input
+              value={materia}
+              onChange={(e) => setMateria(e.target.value)}
+              maxLength={80}
+              placeholder="Ej.: Matemática"
+              className={CLASE_CONTROL}
+            />
+          )}
         </label>
         {cursos?.length === 0 && (
           <p className="rounded-xl bg-arena/15 px-3 py-2 text-sm text-arena">

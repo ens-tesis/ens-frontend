@@ -191,6 +191,46 @@ function BotonQuitar({ nombre, onClick }: { nombre: string; onClick: () => void 
   );
 }
 
+// Materias que da el docente en el curso, separadas por coma. Son las que
+// después el docente elige al abrir la clase.
+function MateriasDocente({ cursoId, docente }: { cursoId: number; docente: PersonaResumen & { materias: string[] } }) {
+  const queryClient = useQueryClient();
+  const [texto, setTexto] = useState(docente.materias.join(", "));
+  const materias = texto.split(",").map((m) => m.trim()).filter(Boolean);
+  const guardar = useMutation({
+    mutationFn: () => api.put(`/cursos/${cursoId}/docentes/${docente.id}/materias`, { materias }),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["cursos"] }),
+  });
+  const cambio = materias.join(", ") !== docente.materias.join(", ");
+  return (
+    <form
+      className="mt-1.5 flex gap-2"
+      onSubmit={(e) => {
+        e.preventDefault();
+        guardar.mutate();
+      }}
+    >
+      <input
+        aria-label={`Materias de ${docente.nombre} ${docente.apellido}`}
+        value={texto}
+        onChange={(e) => setTexto(e.target.value)}
+        placeholder="Materias: Matemática, Física"
+        className={`${CLASE_CONTROL} min-w-0 py-1.5 text-sm`}
+      />
+      {cambio && (
+        <Boton type="submit" variante="sutil" cargando={guardar.isPending} className="shrink-0">
+          Guardar
+        </Boton>
+      )}
+      {guardar.isError && (
+        <span role="alert" className="self-center text-xs text-error">
+          {mensajeDeError(guardar.error, "No se guardó.")}
+        </span>
+      )}
+    </form>
+  );
+}
+
 // Docentes o preceptores del curso: quiénes son y cómo sumar otro.
 function Equipo({
   titulo,
@@ -199,13 +239,16 @@ function Equipo({
   disponibles,
   onAgregar,
   onQuitar,
+  cursoId,
 }: {
   titulo: string;
   vacio: string;
-  personas: PersonaResumen[];
+  personas: (PersonaResumen & { materias?: string[] })[];
   disponibles: Usuario[];
   onAgregar: (id: number) => void;
   onQuitar: (id: number) => void;
+  // Solo docentes: muestra y edita sus materias en el curso.
+  cursoId?: number;
 }) {
   return (
     <Tarjeta className="space-y-4">
@@ -227,6 +270,9 @@ function Equipo({
                   {p.nombre} {p.apellido}
                 </span>
                 <span className="block truncate text-xs text-carbon/55">{p.email}</span>
+                {cursoId !== undefined && p.materias && (
+                  <MateriasDocente key={p.materias.join()} cursoId={cursoId} docente={{ ...p, materias: p.materias }} />
+                )}
               </span>
               <BotonQuitar nombre={`${p.nombre} ${p.apellido}`} onClick={() => onQuitar(p.id)} />
             </li>
@@ -310,6 +356,7 @@ function FichaCurso({ curso, esPreceptor, onVolver }: { curso: Curso; esPrecepto
           disponibles={docentes.data ?? []}
           onAgregar={agregar("docentes")}
           onQuitar={quitar("docentes")}
+          cursoId={curso.id}
         />
         {!esPreceptor && (
           <Equipo

@@ -24,12 +24,15 @@ import { useCursos } from "@/features/cursos";
 const fechaHora = (iso: string) =>
   new Date(iso).toLocaleString("es-AR", { dateStyle: "short", timeStyle: "short", hour12: false });
 const hora = (iso: string) => new Date(iso).toLocaleTimeString("es-AR", { timeStyle: "medium", hour12: false });
+const horaCorta = (iso: string) => new Date(iso).toLocaleTimeString("es-AR", { timeStyle: "short", hour12: false });
 
 // Infracción pedagógica vs incidente técnico (anteproyecto: filtrado por
 // tipo de desconexión).
 type FiltroEventos = "todos" | "pedagogicos" | "tecnicos";
 
-function clasificar(e: EventoPresencia): FiltroEventos | null {
+type Evento = Omit<EventoPresencia, "alumnoId">;
+
+function clasificar(e: Evento): FiltroEventos | null {
   if (
     e.estado === "fuera_de_foco" ||
     e.estado === "ausente_digital" ||
@@ -43,6 +46,25 @@ function clasificar(e: EventoPresencia): FiltroEventos | null {
   )
     return "tecnicos";
   return null;
+}
+
+// Línea de tiempo de un alumno en una clase: hora, estado y tipo de
+// desconexión (detalle de sesión e historial por alumno).
+function ListaEventos({ eventos }: { eventos: Evento[] }) {
+  if (eventos.length === 0) return <p className="text-xs text-carbon/55">Sin eventos de este tipo.</p>;
+  return (
+    <ol className="space-y-1.5 border-l-2 border-carbon/10 pl-3 text-xs text-carbon/80">
+      {eventos.map((e, i) => (
+        <li key={i} className="flex flex-wrap gap-x-2">
+          <span className="font-mono text-carbon/55 tabular-nums">{hora(e.ts)}</span>
+          <span className="font-medium">{ETIQUETA_ESTADO[e.estado]}</span>
+          {e.tipoDesconexion && (
+            <span className="text-carbon/55">{ETIQUETA_DESCONEXION[e.tipoDesconexion] ?? e.tipoDesconexion}</span>
+          )}
+        </li>
+      ))}
+    </ol>
+  );
 }
 
 function params(periodo: Periodo, extra: Record<string, string | number | undefined> = {}) {
@@ -255,23 +277,7 @@ function DetalleSesion({
                     {ETIQUETA_ESTADO[p.estadoFinal]}
                   </Badge>
                 </div>
-                {eventos.length === 0 ? (
-                  <p className="text-xs text-carbon/55">Sin eventos de este tipo.</p>
-                ) : (
-                  <ol className="space-y-1.5 border-l-2 border-carbon/10 pl-3 text-xs text-carbon/80">
-                    {eventos.map((e, i) => (
-                      <li key={i} className="flex flex-wrap gap-x-2">
-                        <span className="font-mono text-carbon/55 tabular-nums">{hora(e.ts)}</span>
-                        <span className="font-medium">{ETIQUETA_ESTADO[e.estado]}</span>
-                        {e.tipoDesconexion && (
-                          <span className="text-carbon/55">
-                            {ETIQUETA_DESCONEXION[e.tipoDesconexion] ?? e.tipoDesconexion}
-                          </span>
-                        )}
-                      </li>
-                    ))}
-                  </ol>
-                )}
+                <ListaEventos eventos={eventos} />
               </li>
             );
           })}
@@ -291,6 +297,7 @@ export function HistorialAlumno({
   onVolver: () => void;
 }) {
   const [periodo, setPeriodo] = useState<Periodo>({ desde: "", hasta: "" });
+  const [filtro, setFiltro] = useState<FiltroEventos>("todos");
   const historial = useQuery({
     queryKey: ["reportes", "alumno", alumnoId, periodo],
     queryFn: () =>
@@ -316,20 +323,53 @@ export function HistorialAlumno({
       ) : historial.data.length === 0 ? (
         <MensajeEstado tipo="vacio">No participó de clases en ese período.</MensajeEstado>
       ) : (
-        <ul className="space-y-2">
-          {historial.data.map((s) => (
-            <li key={s.sesionId} className={`${CLASE_FILA} flex items-center gap-4 bg-white p-3 pr-4`}>
-              <Fecha iso={s.iniciadaAt} />
-              <div className="min-w-0 flex-1 space-y-2">
-                <p className="truncate text-sm">
-                  <span className="font-semibold text-carbon">{s.curso ?? "Sin curso"}</span>
-                  <span className="text-carbon/60"> · {s.docente}</span>
-                </p>
-                <Conteos c={s} />
-              </div>
-            </li>
-          ))}
-        </ul>
+        <>
+          <Pestanas
+            etiqueta="Eventos a mostrar"
+            opciones={[
+              { id: "todos", etiqueta: "Todos" },
+              { id: "pedagogicos", etiqueta: "Foco" },
+              { id: "tecnicos", etiqueta: "Red" },
+            ]}
+            activa={filtro}
+            onCambiar={setFiltro}
+          />
+          <ul className="space-y-2">
+            {historial.data.map((s) => {
+              const eventos = s.eventos.filter((e) => filtro === "todos" || clasificar(e) === filtro);
+              return (
+                <li key={s.sesionId} className={`${CLASE_FILA} space-y-3 bg-white p-3 pr-4`}>
+                  <div className="flex items-center gap-4">
+                    <Fecha iso={s.iniciadaAt} />
+                    <div className="min-w-0 flex-1 space-y-2">
+                      <div className="flex flex-wrap items-center justify-between gap-2">
+                        <p className="min-w-0 truncate text-sm">
+                          <span className="font-semibold text-carbon">{s.curso ?? "Sin curso"}</span>
+                          <span className="text-carbon/60">
+                            {" "}
+                            · {s.docente} · <span className="tabular-nums">{horaCorta(s.iniciadaAt)} h</span>
+                          </span>
+                        </p>
+                        <Badge variante={COLOR_ESTADO[s.estadoFinal]} punto>
+                          {ETIQUETA_ESTADO[s.estadoFinal]}
+                        </Badge>
+                      </div>
+                      <Conteos c={s} />
+                    </div>
+                  </div>
+                  <details>
+                    <summary className="cursor-pointer text-xs font-semibold text-carbon/70 select-none">
+                      Ver eventos ({eventos.length})
+                    </summary>
+                    <div className="mt-2">
+                      <ListaEventos eventos={eventos} />
+                    </div>
+                  </details>
+                </li>
+              );
+            })}
+          </ul>
+        </>
       )}
     </div>
   );

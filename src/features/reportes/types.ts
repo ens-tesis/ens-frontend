@@ -42,6 +42,7 @@ export interface SesionDeAlumno extends ConteosEventos {
   docente: string;
   curso: string | null;
   estadoFinal: EstadoPresencia;
+  eventos: Omit<EventoPresencia, "alumnoId">[];
 }
 
 export interface FilaMetricas extends ConteosEventos {

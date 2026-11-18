@@ -1,6 +1,7 @@
 "use client";
 
 import { useMutation, useQuery, type UseMutationResult, type UseQueryResult } from "@tanstack/react-query";
+import axios from "axios";
 import { createContext, useContext, useState, type ReactNode } from "react";
 import { getToken, useUsuarioActual } from "@/features/auth";
 import { useCursos, type Curso } from "@/features/cursos";
@@ -58,10 +59,17 @@ export function ClaseDocenteProvider({ children }: { children: ReactNode }) {
     queryKey: ["sesion", codigoSesion],
     queryFn: () => api.get<SesionCompleta>(`/sesiones/${codigoSesion}`).then((res) => res.data),
     enabled: esDocente && Boolean(codigoSesion),
+    // 404/403 no se arreglan reintentando: se descarta la clase enseguida.
+    retry: (intentos, err) =>
+      intentos < 3 && !(axios.isAxiosError(err) && [403, 404].includes(err.response?.status ?? 0)),
   });
   // Una clase guardada en la pestaña que ya terminó (p. ej. se finalizó y
-  // se recargó) no se muestra como en vivo.
-  const codigoActivo = sesion.data?.sesion.activa === false ? null : codigoSesion;
+  // se recargó) no se muestra como en vivo. Tampoco una que ya no existe o
+  // no es suya (base limpiada, otro docente en este navegador): si no,
+  // queda reintentando una conexión que nunca va a andar.
+  const estadoError = axios.isAxiosError(sesion.error) ? sesion.error.response?.status : undefined;
+  const sinClase = sesion.data?.sesion.activa === false || estadoError === 404 || estadoError === 403;
+  const codigoActivo = sinClase ? null : codigoSesion;
 
   const socket = useSesionSocket(esDocente ? codigoActivo : null, getToken());
   const registro = useRegistroClase(codigoActivo, socket.participantes);

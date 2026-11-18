@@ -107,7 +107,19 @@ async function encolar(evento) {
   await pedido(db.transaction("eventos", "readwrite").objectStore("eventos").add(evento));
 }
 
-async function sincronizar() {
+// Usuario del JWT (sin verificar: solo para no mandar los eventos de un
+// alumno con el token de otro que entró después en el mismo celular).
+function usuarioDe(token) {
+  try {
+    return JSON.parse(atob(token.split(".")[1].replace(/-/g, "+").replace(/_/g, "/"))).usuarioId;
+  } catch {
+    return null;
+  }
+}
+
+// `tokenVigente`: el que manda la página al sincronizar. El guardado con
+// cada evento vence a los 90 min y la cola puede tener días.
+async function sincronizar(tokenVigente) {
   const db = await abrirDb();
   const store = db.transaction("eventos", "readonly").objectStore("eventos");
   const [claves, eventos] = await Promise.all([pedido(store.getAllKeys()), pedido(store.getAll())]);
@@ -125,6 +137,7 @@ async function sincronizar() {
 
   let pendiente = false;
   for (const lote of lotes.values()) {
+    if (tokenVigente && usuarioDe(tokenVigente) === usuarioDe(lote.token)) lote.token = tokenVigente;
     let res;
     try {
       res = await fetch(`${lote.api}/sesiones/${encodeURIComponent(lote.codigo)}/eventos-offline`, {
@@ -140,7 +153,10 @@ async function sincronizar() {
       pendiente = true;
       continue;
     }
-    // 2xx, o un 4xx que nunca va a andar (sesión inexistente, token vencido): se descarta.
+    // Token vencido: se guarda hasta que la página mande uno vigente (no
+    // se reintenta solo, sería con el mismo token).
+    if (res.status === 401) continue;
+    // 2xx, o un 4xx que nunca va a andar (sesión inexistente, no es suya): se descarta.
     const tx = db.transaction("eventos", "readwrite").objectStore("eventos");
     await Promise.all(lote.claves.map((c) => pedido(tx.delete(c))));
   }
@@ -154,7 +170,7 @@ self.addEventListener("sync", (event) => {
 
 self.addEventListener("message", (event) => {
   if (event.data?.type === "encolar") event.waitUntil(encolar(event.data.evento));
-  if (event.data?.type === "sincronizar") event.waitUntil(sincronizar().catch(() => {}));
+  if (event.data?.type === "sincronizar") event.waitUntil(sincronizar(event.data.token).catch(() => {}));
 });
 
 // --- Web Push ---
@@ -170,6 +186,7 @@ const TITULOS = {
   distracciones_reiteradas: "Distracciones reiteradas",
   no_se_unio: "No se unió",
   otro_dispositivo: "Otro dispositivo",
+  actividad_sin_red: "Actividad sin red",
   contingencia: "Modo contingencia",
 };
 

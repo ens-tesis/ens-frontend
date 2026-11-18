@@ -136,6 +136,17 @@ export default function AlumnoView({ codigoQr }: { codigoQr: string | null }) {
     return `${apiUrl}/${ruta}?${params.toString()}`;
   }
 
+  // Lo que quedó encolado sin red se manda apenas el alumno abre el ENS o
+  // vuelve la red, aunque sea de una clase de hace días (no hace falta
+  // volver a entrar a esa clase).
+  const esAlumno = usuarioQuery.data?.usuario.rol === "alumno";
+  useEffect(() => {
+    if (!esAlumno) return;
+    sincronizarEventosOffline();
+    window.addEventListener("online", sincronizarEventosOffline);
+    return () => window.removeEventListener("online", sincronizarEventosOffline);
+  }, [esAlumno]);
+
   // Le avisa al backend cuando esta pestaña deja de estar en foco (u
   // vuelve) — ver "Fuera de Foco"/"Ausente Digital" en sesiones.ws.ts.
   // Solo tiene sentido reportarlo con el socket ya conectado.

@@ -15,6 +15,7 @@ export type TipoNotificacion =
   | "distracciones_reiteradas"
   | "no_se_unio"
   | "otro_dispositivo"
+  | "actividad_sin_red"
   | "contingencia";
 
 // Una alerta es un incidente: abierta (resueltaAt null) mientras dure,
@@ -40,6 +41,7 @@ export const TITULO_NOTIFICACION: Record<TipoNotificacion, string> = {
   distracciones_reiteradas: "Distracciones reiteradas",
   no_se_unio: "No se unió",
   otro_dispositivo: "Otro dispositivo",
+  actividad_sin_red: "Actividad sin red",
   contingencia: "Modo contingencia",
 };
 
@@ -52,6 +54,7 @@ export const SEVERIDAD: Record<TipoNotificacion, Severidad> = {
   distracciones_reiteradas: "presencia",
   no_se_unio: "presencia",
   otro_dispositivo: "seguridad",
+  actividad_sin_red: "presencia",
   contingencia: "sistema",
 };
 
@@ -86,7 +89,8 @@ function notificacionSistema(n: Notificacion): void {
   const agrupada = n.tipo === "no_se_unio";
   const tag = agrupada ? `ens-${n.sesionId}-no_se_unio` : `ens-${n.sesionId}-${n.alumnoId ?? n.tipo}`;
   cola = cola.then(() => navigator.serviceWorker.ready).then(async (reg) => {
-    if (n.resueltaAt || !document.hidden) {
+    // 'actividad_sin_red' de una clase ya terminada llega resuelta, pero es un aviso nuevo.
+    if ((n.resueltaAt && n.tipo !== "actividad_sin_red") || !document.hidden) {
       if (!agrupada || !document.hidden) for (const abierta of await reg.getNotifications({ tag })) abierta.close();
       return;
     }

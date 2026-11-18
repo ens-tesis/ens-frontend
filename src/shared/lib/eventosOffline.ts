@@ -4,6 +4,8 @@
 // (Chrome/Android), o cuando la página le avisa que reconectó.
 
 import { urlBackend } from "../api/backendUrl";
+import { api } from "../api/client";
+import { getToken } from "../auth/token";
 
 const TAG_SYNC = "ens-eventos-offline";
 
@@ -31,6 +33,13 @@ export function encolarEventoOffline(
   });
 }
 
+// Con un token vigente: la cola puede tener días y el guardado con cada
+// evento ya venció. /auth/me pasa por el cliente Axios, que lo renueva si
+// hace falta; sin red falla y no se manda nada (el SW reintenta solo).
 export function sincronizarEventosOffline(): void {
-  void swActivo().then((reg) => reg?.active!.postMessage({ type: "sincronizar" }));
+  void swActivo().then(async (reg) => {
+    if (!reg) return;
+    const ok = await api.get("/auth/me").then(() => true, () => false);
+    if (ok) reg.active!.postMessage({ type: "sincronizar", token: getToken() });
+  });
 }

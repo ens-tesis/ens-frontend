@@ -281,25 +281,28 @@ function VisorInforme({ id, onVolver }: { id: number; onVolver: () => void }) {
     queryFn: () => api.get<string>(`/seguimientos/${id}/informe`, { responseType: "text" }).then((r) => r.data),
   });
 
-  function descargar(): void {
-    if (!informe.data) return;
-    const url = URL.createObjectURL(new Blob([informe.data], { type: "text/html" }));
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = `seguimiento-ens-${id}.html`;
-    a.click();
-    URL.revokeObjectURL(url);
-  }
+  const word = useMutation({
+    mutationFn: () => api.get<Blob>(`/seguimientos/${id}/informe.docx`, { responseType: "blob" }).then((r) => r.data),
+    onSuccess: (blob) => {
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `seguimiento-ens-${id}.docx`;
+      a.click();
+      URL.revokeObjectURL(url);
+    },
+  });
 
   return (
     <div className="space-y-4">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <Volver onClick={onVolver}>Seguimiento</Volver>
-        <Boton variante="sutil" onClick={descargar} disabled={!informe.data}>
+        <Boton variante="sutil" onClick={() => word.mutate()} disabled={!informe.data || word.isPending}>
           <Icono nombre="descargar" className="size-4" />
-          Descargar HTML
+          {word.isPending ? "Armando el Word..." : "Descargar Word"}
         </Boton>
       </div>
+      {word.isError && <MensajeEstado tipo="error">{mensajeDeError(word.error, "No se pudo descargar el Word.")}</MensajeEstado>}
       {informe.isPending ? (
         <MensajeEstado tipo="cargando">Armando el informe...</MensajeEstado>
       ) : informe.isError ? (

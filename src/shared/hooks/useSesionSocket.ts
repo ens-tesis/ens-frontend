@@ -175,10 +175,21 @@ function conectarSesionSocket(
     };
   }
 
+  // Al volver la red (p. ej. se quita el modo avión) no se espera el
+  // backoff: reintenta ya.
+  function alVolverLaRed(): void {
+    if (cerradoManualmente || socketActual?.readyState === WebSocket.OPEN || socketActual?.readyState === WebSocket.CONNECTING) return;
+    clearTimeout(reintentoTimer);
+    intentosFallidos = 0;
+    abrir();
+  }
+  window.addEventListener("online", alVolverLaRed);
+
   abrir();
 
   return () => {
     cerradoManualmente = true;
+    window.removeEventListener("online", alVolverLaRed);
     clearTimeout(reintentoTimer);
     socketActual?.close();
   };

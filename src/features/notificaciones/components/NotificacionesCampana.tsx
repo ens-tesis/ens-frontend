@@ -27,7 +27,7 @@ function cuando(iso: string, abierta: boolean): string {
   return new Date(iso).toLocaleTimeString("es-AR", { hour: "2-digit", minute: "2-digit", hour12: false });
 }
 
-function Fila({ n }: { n: Notificacion }) {
+function Fila({ n, onOcultar }: { n: Notificacion; onOcultar?: () => void }) {
   const abierta = !n.resueltaAt;
   return (
     <li className={`flex gap-3 rounded-2xl px-3 py-2.5 ${abierta ? "bg-papel" : ""}`}>
@@ -47,6 +47,16 @@ function Fila({ n }: { n: Notificacion }) {
           {textoClase(n) && <span className="text-carbon/45"> · {textoClase(n)}</span>}
         </p>
       </div>
+      {onOcultar && (
+        <button
+          type="button"
+          aria-label="Ocultar alerta"
+          onClick={onOcultar}
+          className="grid size-8 shrink-0 place-items-center rounded-full text-carbon/50 hover:bg-carbon/10 hover:text-carbon focus-visible:outline focus-visible:outline-2 focus-visible:outline-carbon"
+        >
+          <span aria-hidden="true" className="text-lg leading-none">×</span>
+        </button>
+      )}
     </li>
   );
 }
@@ -55,7 +65,7 @@ function Fila({ n }: { n: Notificacion }) {
 // lo que pasa ahora y lo que ya se resolvió. Llegan en vivo por WebSocket
 // y, con la pestaña oculta, como notificación del sistema.
 export function NotificacionesCampana() {
-  const { abiertas, resueltas, permiso, pedirPermiso } = useNotificaciones();
+  const { abiertas, resueltas, permiso, pedirPermiso, ocultar } = useNotificaciones();
   const [abierto, setAbierto] = useState(false);
 
   return (
@@ -118,12 +128,19 @@ export function NotificacionesCampana() {
 
               {resueltas.length > 0 && (
                 <div>
-                  <p className="px-3 pb-1 text-[11px] font-semibold tracking-[0.14em] text-carbon/50 uppercase">
-                    Resueltas
-                  </p>
+                  <div className="flex items-center justify-between px-3 pb-1">
+                    <p className="text-[11px] font-semibold tracking-[0.14em] text-carbon/50 uppercase">Resueltas</p>
+                    <button
+                      type="button"
+                      onClick={() => void ocultar().catch(() => {})}
+                      className="min-h-9 rounded-lg px-2 text-xs font-semibold text-carbon/70 hover:text-carbon focus-visible:outline focus-visible:outline-2 focus-visible:outline-carbon"
+                    >
+                      Ocultar todas
+                    </button>
+                  </div>
                   <ul className="space-y-1">
                     {resueltas.slice(0, 20).map((n) => (
-                      <Fila key={n.id} n={n} />
+                      <Fila key={n.id} n={n} onOcultar={() => void ocultar([n.id]).catch(() => {})} />
                     ))}
                   </ul>
                 </div>

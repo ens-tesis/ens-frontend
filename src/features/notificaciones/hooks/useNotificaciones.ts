@@ -226,6 +226,13 @@ export function useNotificaciones() {
     abiertas: notificaciones.filter((n) => !n.resueltaAt),
     resueltas: notificaciones.filter((n) => n.resueltaAt),
     permiso,
+    // Oculta de la campana alertas ya resueltas (no se borran). Sin ids, todas.
+    ocultar: async (ids?: number[]) => {
+      await api.post("/notificaciones/ocultar", { ids });
+      queryClient.setQueryData<Notificacion[]>(CLAVE, (prev) =>
+        (prev ?? []).filter((n) => !n.resueltaAt || (ids && !ids.includes(n.id))),
+      );
+    },
     pedirPermiso: () =>
       void Notification.requestPermission().then(() => setVersionPermiso((v) => v + 1)),
   };

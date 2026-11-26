@@ -13,18 +13,16 @@ interface ParticipantesPanelProps {
   umbral: number;
 }
 
-// Dentro del mismo nivel del semáforo, lo que necesita atención ya arriba.
+// Primer criterio del orden: lo que necesita atención arriba.
 const PRIORIDAD_ESTADO: Record<EstadoPresencia, number> = {
-  desconectado: 0,
-  ausente_digital: 1,
-  sin_red: 2,
+  sin_red: 0,
+  desconectado: 1,
+  ausente_digital: 2,
   fuera_de_foco: 3,
   actividad_reducida: 4,
   pantalla_suspendida: 5,
   conectado: 6,
 };
-
-const ORDEN_NIVEL: Record<Nivel, number> = { rojo: 0, ambar: 1, verde: 2 };
 
 const CLASE_NIVEL: Record<Nivel, string> = {
   verde: "bg-arena text-carbon",
@@ -68,9 +66,9 @@ export function ParticipantesPanel({ participantes, cargando, entradas, umbral }
   const filas = participantes.map((p) => ({ p, a: atencion.get(p.alumnoId) ?? sin }));
   filas.sort(
     (x, y) =>
-      ORDEN_NIVEL[x.a.nivel] - ORDEN_NIVEL[y.a.nivel] ||
-      y.a.segundosFuera - x.a.segundosFuera ||
-      PRIORIDAD_ESTADO[x.p.estadoActual] - PRIORIDAD_ESTADO[y.p.estadoActual],
+      PRIORIDAD_ESTADO[x.p.estadoActual] - PRIORIDAD_ESTADO[y.p.estadoActual] ||
+      y.a.distracciones - x.a.distracciones ||
+      y.a.segundosFuera - x.a.segundosFuera,
   );
 
   return (
